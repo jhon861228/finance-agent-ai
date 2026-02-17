@@ -38,7 +38,8 @@ resource "aws_amplify_app" "frontend" {
   }
 
   environment_variables = {
-    ENV = "prod"
+    ENV                = "prod"
+    PUBLIC_BACKEND_URL = aws_apigatewayv2_stage.default.invoke_url
   }
 }
 
