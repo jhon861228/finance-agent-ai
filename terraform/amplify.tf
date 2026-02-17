@@ -19,6 +19,9 @@ resource "aws_amplify_app" "frontend" {
         build:
           commands:
             - npm run build
+        postBuild:
+          commands:
+            - cp -r node_modules .amplify-hosting/compute/default/node_modules
       artifacts:
         baseDirectory: .amplify-hosting
         files:
