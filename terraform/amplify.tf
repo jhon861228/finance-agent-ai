@@ -26,8 +26,15 @@ resource "aws_amplify_app" "frontend" {
 
   custom_rule {
     source = "/<*>"
-    status = "404-200"
+    status = "200"
     target = "/index.html"
+  }
+
+  # Regla para manejar rutas con extensiones (archivos estáticos)
+  custom_rule {
+    source = "/<*>.{js,css,png,jpg,jpeg,svg,gif,woff,woff2,ico,json}"
+    status = "200"
+    target = "/<*>.{js,css,png,jpg,jpeg,svg,gif,woff,woff2,ico,json}"
   }
 
   environment_variables = {
