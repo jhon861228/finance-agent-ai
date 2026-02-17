@@ -3,7 +3,7 @@ resource "aws_amplify_app" "frontend" {
   repository = "https://github.com/jhon861228/finance-agent-ai"
 
   # Si usas un token de acceso personal (PAT) para GitHub
-  # access_token = var.github_token 
+  access_token = var.github_token 
 
   build_spec = <<-EOT
     version: 1
@@ -11,11 +11,10 @@ resource "aws_amplify_app" "frontend" {
       phases:
         preBuild:
           commands:
-            - cd frontend
-            - npm install
+            - cd frontend && npm install
         build:
           commands:
-            - npm run build
+            - cd frontend && npm run build
       artifacts:
         baseDirectory: frontend/dist
         files:
