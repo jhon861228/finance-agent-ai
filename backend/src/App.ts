@@ -48,7 +48,7 @@ app.post('/api/commands', async (req: Request, res: Response) => {
 // QUERY ROUTES
 app.get('/api/users/by-username/:username', async (req: Request, res: Response) => {
     try {
-        const result = await QueryService.getUserByUsername(req.params.username);
+        const result = await QueryService.getUserByUsername(req.params.username as string);
         if (!result) return res.status(404).json({ error: 'User not found' });
         res.json(result);
     } catch (error: any) {
@@ -58,7 +58,7 @@ app.get('/api/users/by-username/:username', async (req: Request, res: Response) 
 
 app.get('/api/users/:userId/groups', async (req: Request, res: Response) => {
     try {
-        const result = await QueryService.getUserGroups(req.params.userId);
+        const result = await QueryService.getUserGroups(req.params.userId as string);
         res.json(result);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -112,7 +112,7 @@ app.get('/api/personal/expenses/:userId', async (req: Request, res: Response) =>
 // Rest of routes... (keeping original structure for brevity)
 app.post('/api/personal/expenses/:userId', async (req: Request, res: Response) => {
     try {
-        const userId = req.params.userId;
+        const userId = req.params.userId as string;
         const payload = { ...req.body, userId };
         const command = { commandId: uuidv4(), type: 'RecordPersonalExpense', payload } as Command;
         const result = await CommandProcessor.process(command);
@@ -127,7 +127,7 @@ app.delete('/api/personal/expenses/:userId/:expenseId', async (req: Request, res
         const command = {
             commandId: uuidv4(),
             type: 'DeletePersonalExpense',
-            payload: { userId: req.params.userId, expenseId: req.params.expenseId }
+            payload: { userId: req.params.userId as string, expenseId: req.params.expenseId as string }
         } as Command;
         const result = await CommandProcessor.process(command);
         res.json(result);

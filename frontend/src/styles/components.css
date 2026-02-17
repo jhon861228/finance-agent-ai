@@ -1,0 +1,98 @@
+/* Shared Component Styles */
+
+/* Section Headers */
+.sec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.sec-header h2 {
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: #fff;
+    margin: 0;
+    text-transform: uppercase;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+}
+
+/* User Pill & Avatars */
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    background: #f0f0b0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #555;
+}
+
+.avatar-xs {
+    width: 28px;
+    height: 28px;
+    background: #222;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: #888;
+}
+
+/* Premium Buttons & States */
+.manage-btn,
+.view-all-btn,
+.back-btn-luxury {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.manage-btn:hover,
+.view-all-btn:hover {
+    opacity: 0.8;
+}
+
+.back-btn-luxury {
+    color: #fff;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Status Pills */
+.status-pill {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.status-pill.settled {
+    background: rgba(46, 204, 113, 0.1);
+    color: #2ecc71;
+}
+
+/* Hidden Utility */
+.hidden {
+    display: none !important;
+}

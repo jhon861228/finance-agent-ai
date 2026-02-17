@@ -1,0 +1,113 @@
+---
+interface Props {
+    username: string;
+    title?: string;
+    showBack?: boolean;
+    backUrl?: string;
+}
+
+const {
+    username,
+    title,
+    showBack = false,
+    backUrl = "/dashboard",
+} = Astro.props;
+---
+
+<header class="luxury-head">
+    <div class="left-section">
+        {
+            showBack ? (
+                <a
+                    href={`${backUrl}?username=${username}`}
+                    class="back-btn-luxury"
+                >
+                    <span>←</span>
+                </a>
+            ) : (
+                <div class="user-pill">
+                    <div class="avatar-sm">{username[0].toUpperCase()}</div>
+                    <div class="user-meta">
+                        <span class="greet">Good Morning,</span>
+                        <span class="name-bold">{username}</span>
+                    </div>
+                </div>
+            )
+        }
+    </div>
+
+    {
+        title && (
+            <div class="title-container">
+                <span class="sec-label">GROUP ACCOUNT</span>
+                <h1 class="gold-text">{title}</h1>
+            </div>
+        )
+    }
+
+    <div class="right-section">
+        <div class="notif-bell">
+            <span class="bell-icon">{showBack ? "⋮" : "🔔"}</span>
+        </div>
+    </div>
+</header>
+
+<style>
+    .luxury-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        min-height: 50px;
+    }
+
+    .user-meta {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .greet {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: block;
+    }
+
+    .name-bold {
+        font-weight: 700;
+        font-size: 1rem;
+        font-family: "Montserrat", sans-serif;
+    }
+
+    .title-container {
+        text-align: center;
+    }
+
+    .sec-label {
+        font-size: 0.6rem;
+        letter-spacing: 0.15em;
+        color: #666;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .luxury-head h1 {
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    .notif-bell {
+        width: 45px;
+        height: 45px;
+        background: #121212;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bell-icon {
+        font-size: 1rem;
+    }
+</style>

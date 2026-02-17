@@ -1,0 +1,89 @@
+---
+interface Props {
+    amount: number;
+    label?: string;
+    trend?: string;
+}
+
+const {
+    amount,
+    label = "TOTAL WEALTH PORTFOLIO",
+    trend = "+12.4% this month",
+} = Astro.props;
+
+const wholePart = Math.floor(amount);
+const centsPart = ((amount % 1) * 100).toFixed(0).padStart(2, "0");
+---
+
+<section class="portfolio-card">
+    <span class="portfolio-title">{label}</span>
+    <div class="portfolio-amount">
+        <span class="currency">$</span>
+        <span class="big-gold">{wholePart.toLocaleString()}</span>
+        <span class="cents">.{centsPart}</span>
+    </div>
+    {
+        trend && (
+            <div class="trend-pill">
+                <span class="trend-icon">📈</span>
+                <span class="trend-val">{trend}</span>
+            </div>
+        )
+    }
+</section>
+
+<style>
+    .portfolio-card {
+        background: #0f0f0f;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        border-radius: 32px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .portfolio-title {
+        font-size: 0.65rem;
+        letter-spacing: 0.2em;
+        color: #999;
+        font-weight: 700;
+    }
+
+    .portfolio-amount {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 800;
+    }
+
+    .currency {
+        font-size: 1.5rem;
+        vertical-align: top;
+        margin-right: 4px;
+        color: var(--primary);
+    }
+
+    .big-gold {
+        font-size: 3.5rem;
+        color: var(--primary);
+        letter-spacing: -2px;
+    }
+
+    .cents {
+        font-size: 1.5rem;
+        color: var(--accent);
+        opacity: 0.8;
+    }
+
+    .trend-pill {
+        background: rgba(46, 204, 113, 0.1);
+        color: #2ecc71;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        width: fit-content;
+        align-self: center;
+        margin-top: 0.5rem;
+    }
+</style>

@@ -1,6 +1,12 @@
 ---
 const username = (Astro.url.searchParams.get("username") || "").trim();
 import Layout from "../layouts/Layout.astro";
+import PageHeader from "../components/PageHeader.astro";
+import PortfolioSummary from "../components/PortfolioSummary.astro";
+import GroupCard from "../components/GroupCard.astro";
+import ExpenseItem from "../components/ExpenseItem.astro";
+import "../styles/components.css";
+
 import {
 	getUserByUsername,
 	getPersonalExpenses,
@@ -47,50 +53,13 @@ const allExpenses = [
 			})),
 	),
 ].sort((a, b) => b.timestamp - a.timestamp);
-
-const totalPersonal = personalExpenses.reduce(
-	(sum: number, e: Expense) => sum + (e.amount || 0),
-	0,
-);
 ---
 
 <Layout title="Dashboard">
 	<div class="premium-dashboard">
-		<!-- Header -->
-		<header class="luxury-head">
-			<div class="user-pill">
-				<div class="avatar-sm">{username[0].toUpperCase()}</div>
-				<div class="user-meta">
-					<span class="greet">Good Morning,</span>
-					<span class="name-bold">{user.name}</span>
-				</div>
-			</div>
-			<div class="notif-bell">
-				<span class="bell-icon">🔔</span>
-			</div>
-		</header>
+		<PageHeader username={user.name} />
 
-		<!-- Portfolio Summary -->
-		<section class="portfolio-card">
-			<span class="portfolio-title">TOTAL WEALTH PORTFOLIO</span>
-			<div class="portfolio-amount">
-				<span class="currency">$</span>
-				<span class="big-gold"
-					>{Math.floor(totalPersonalSpend).toLocaleString()}</span
-				>
-				<span class="cents"
-					>.{
-						((totalPersonalSpend % 1) * 100)
-							.toFixed(0)
-							.padStart(2, "0")
-					}</span
-				>
-			</div>
-			<div class="trend-pill">
-				<span class="trend-icon">📈</span>
-				<span class="trend-val">+12.4% this month</span>
-			</div>
-		</section>
+		<PortfolioSummary amount={totalPersonalSpend} />
 
 		<!-- Action Grid -->
 		<div class="action-grid">
@@ -129,43 +98,11 @@ const totalPersonal = personalExpenses.reduce(
 			<div class="cards-scroll">
 				{
 					groups.map((group, index) => (
-						<a
-							href={`/group/${group.groupId}?username=${username}`}
-							class="card-link"
-						>
-							<div
-								class={`premium-card group-card-alt ${index % 2 === 0 ? "gold-border" : "silver-border"}`}
-							>
-								<div class="card-top">
-									<span class="card-title">GROUP ACCESS</span>
-									<span class="visa-style">FINANCE</span>
-								</div>
-								<div class="card-main">
-									<h3 class="group-name-card">
-										{group.name}
-									</h3>
-									<div class="card-number-dots">
-										{group.members.slice(0, 4).map((m) => (
-											<span class="dot">●</span>
-										))}
-										<span class="num-end">
-											{group.groupId.slice(-4)}
-										</span>
-									</div>
-								</div>
-								<div class="card-bottom">
-									<div class="card-holder">
-										<span class="ch-label">MEMBERS</span>
-										<span class="ch-name">
-											{group.members.length} USERS
-										</span>
-									</div>
-									<div class="card-chip">
-										<div class="chip-inner" />
-									</div>
-								</div>
-							</div>
-						</a>
+						<GroupCard
+							group={group}
+							username={username}
+							index={index}
+						/>
 					))
 				}
 				{groups.length === 0 && <p class="muted">No groups yet.</p>}
@@ -194,166 +131,28 @@ const totalPersonal = personalExpenses.reduce(
 
 			<div class="insights-list">
 				{
-					allExpenses.slice(0, 5).map((exp) => (
-						<div class="insight-item">
-							<div class="insight-icon">
-								{exp.source[0].toUpperCase()}
-							</div>
-							<div class="insight-meta">
-								<span class="insight-name">
-									{exp.description}
-								</span>
-								<span class="insight-sub">
-									{exp.source} • {exp.category}
-								</span>
-							</div>
-							<div class="insight-val">
-								<span class="val-num gold-text">
-									${exp.amount.toFixed(2)}
-								</span>
-								<span class="val-trend">+2.45%</span>
-							</div>
-						</div>
-					))
+					allExpenses
+						.slice(0, 5)
+						.map((exp) => (
+							<ExpenseItem
+								description={exp.description}
+								amount={exp.amount}
+								category={exp.category}
+								source={exp.source}
+								timestamp={exp.timestamp}
+							/>
+						))
 				}
 			</div>
 		</section>
 	</div>
 </Layout>
 
-<script>
-	const filterButtons = document.querySelectorAll(".filter-btn");
-	const expenseItems = document.querySelectorAll(".expense-item");
-
-	filterButtons.forEach((btn) => {
-		btn.addEventListener("click", () => {
-			const filter = (btn as HTMLElement).dataset.filter;
-
-			// Update button state
-			filterButtons.forEach((b) => b.classList.remove("active"));
-			btn.classList.add("active");
-
-			// Filter items
-			expenseItems.forEach((item) => {
-				const type = (item as HTMLElement).dataset.type;
-				if (filter === "all" || type === filter) {
-					item.classList.remove("hidden");
-				} else {
-					item.classList.add("hidden");
-				}
-			});
-		});
-	});
-</script>
-
 <style>
 	.premium-dashboard {
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-	}
-
-	.luxury-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.5rem;
-	}
-
-	.user-pill {
-		display: flex;
-		align-items: center;
-		gap: 0.8rem;
-	}
-
-	.avatar-sm {
-		width: 40px;
-		height: 40px;
-		background: #f0f0b0;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 800;
-		color: #555;
-	}
-
-	.greet {
-		font-size: 0.75rem;
-		color: var(--text-muted);
-		display: block;
-	}
-
-	.name-bold {
-		font-weight: 700;
-		font-size: 1rem;
-		font-family: "Montserrat", sans-serif;
-	}
-
-	.notif-bell {
-		width: 45px;
-		height: 45px;
-		background: #121212;
-		border-radius: 50%;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		border: 1px solid rgba(255, 255, 255, 0.05);
-	}
-
-	/* Portfolio */
-	.portfolio-card {
-		background: #0f0f0f;
-		border: 1px solid rgba(255, 255, 255, 0.03);
-		border-radius: 32px;
-		padding: 2.5rem 1.5rem;
-		text-align: center;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.portfolio-title {
-		font-size: 0.65rem;
-		letter-spacing: 0.2em;
-		color: #999;
-		font-weight: 700;
-	}
-
-	.portfolio-amount {
-		font-family: "Montserrat", sans-serif;
-		font-weight: 800;
-	}
-
-	.currency {
-		font-size: 1.5rem;
-		vertical-align: top;
-		margin-right: 4px;
-		color: var(--primary);
-	}
-
-	.big-gold {
-		font-size: 3.5rem;
-		color: var(--primary);
-		letter-spacing: -2px;
-	}
-
-	.cents {
-		font-size: 1.5rem;
-		color: var(--accent);
-		opacity: 0.8;
-	}
-
-	.trend-pill {
-		background: rgba(46, 204, 113, 0.1);
-		color: #2ecc71;
-		padding: 6px 14px;
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 700;
-		width: fit-content;
-		align-self: center;
-		margin-top: 0.5rem;
 	}
 
 	/* Action Grid */
@@ -397,27 +196,6 @@ const totalPersonal = personalExpenses.reduce(
 	}
 
 	/* Cards section */
-	.sec-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1.2rem;
-	}
-
-	.sec-header h2 {
-		font-size: 0.9rem;
-		letter-spacing: 0.05em;
-		color: #fff;
-	}
-
-	.manage-btn,
-	.view-all-btn {
-		font-size: 0.7rem;
-		font-weight: 800;
-		color: var(--primary);
-		text-decoration: none;
-	}
-
 	.cards-scroll {
 		display: flex;
 		gap: 1rem;
@@ -428,95 +206,6 @@ const totalPersonal = personalExpenses.reduce(
 
 	.cards-scroll::-webkit-scrollbar {
 		display: none;
-	}
-
-	.card-link {
-		text-decoration: none;
-		min-width: 280px;
-	}
-
-	.group-card-alt {
-		padding: 1.5rem;
-		height: 180px;
-		display: flex;
-		flex-direction: column;
-		justify-content: pool;
-		gap: 1.5rem;
-	}
-
-	.card-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.card-title {
-		font-size: 0.6rem;
-		color: #888;
-		letter-spacing: 0.1em;
-	}
-
-	.visa-style {
-		font-weight: 800;
-		font-style: italic;
-		font-size: 0.9rem;
-		color: var(--primary);
-	}
-
-	.group-name-card {
-		font-size: 1.4rem;
-		font-family: "Montserrat", sans-serif;
-		margin-bottom: 0.2rem;
-	}
-
-	.card-number-dots {
-		display: flex;
-		gap: 8px;
-		align-items: center;
-		color: #555;
-		font-size: 0.8rem;
-	}
-
-	.num-end {
-		color: #999;
-		margin-left: 10px;
-		letter-spacing: 4px;
-		font-weight: 600;
-	}
-
-	.card-bottom {
-		margin-top: auto;
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-	}
-
-	.ch-label {
-		font-size: 0.5rem;
-		color: #666;
-		display: block;
-		margin-bottom: 2px;
-	}
-
-	.ch-name {
-		font-size: 0.7rem;
-		font-weight: 700;
-		text-transform: uppercase;
-	}
-
-	.card-chip {
-		width: 32px;
-		height: 24px;
-		background: #444;
-		border-radius: 4px;
-		display: flex;
-		padding: 4px;
-	}
-
-	.chip-inner {
-		flex: 1;
-		border: 1px solid #666;
-		border-radius: 2px;
 	}
 
 	/* Insights */
@@ -550,57 +239,8 @@ const totalPersonal = personalExpenses.reduce(
 		background: var(--primary);
 	}
 
-	.insight-item {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 1rem 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-	}
-
-	.insight-icon {
-		width: 48px;
-		height: 48px;
-		background: #1a1a1a;
-		border-radius: 12px;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		font-weight: 800;
-		color: #777;
-		border: 1px solid rgba(255, 255, 255, 0.05);
-	}
-
-	.insight-meta {
-		flex: 1;
+	.insights-list {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.insight-name {
-		font-weight: 700;
-		font-size: 0.9rem;
-	}
-
-	.insight-sub {
-		font-size: 0.7rem;
-		color: #666;
-	}
-
-	.insight-val {
-		text-align: right;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.val-num {
-		font-weight: 800;
-		font-size: 0.95rem;
-	}
-
-	.val-trend {
-		font-size: 0.65rem;
-		color: #2ecc71;
-		font-weight: 700;
 	}
 </style>

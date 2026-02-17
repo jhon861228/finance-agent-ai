@@ -1,0 +1,99 @@
+---
+interface Props {
+    description: string;
+    amount: number;
+    category: string;
+    source: string;
+    timestamp: number;
+    payerName?: string;
+    isNegative?: boolean;
+}
+
+const {
+    description,
+    amount,
+    category,
+    source,
+    timestamp,
+    payerName,
+    isNegative = false,
+} = Astro.props;
+
+const dateStr = new Date(timestamp).toLocaleDateString();
+---
+
+<div class="insight-item">
+    <div class="insight-icon">
+        {description[0].toUpperCase()}
+    </div>
+    <div class="insight-meta">
+        <span class="insight-name">{description}</span>
+        <span class="insight-sub">
+            {source} • {category}
+            {payerName && `• Paid by ${payerName}`}
+        </span>
+    </div>
+    <div class="insight-val">
+        <span class="val-num gold-text">
+            {isNegative ? "-" : ""}${amount.toFixed(2)}
+        </span>
+        <span class="val-date">{dateStr}</span>
+    </div>
+</div>
+
+<style>
+    .insight-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.2rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .insight-icon {
+        width: 48px;
+        height: 48px;
+        background: #1a1a1a;
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 800;
+        color: #777;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .insight-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .insight-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .insight-sub {
+        font-size: 0.7rem;
+        color: #666;
+    }
+
+    .insight-val {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .val-num {
+        font-weight: 800;
+        font-size: 1rem;
+        font-family: "Montserrat", sans-serif;
+    }
+
+    .val-date {
+        font-size: 0.65rem;
+        color: #444;
+        font-weight: 600;
+    }
+</style>
