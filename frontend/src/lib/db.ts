@@ -1,0 +1,69 @@
+const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3000';
+const API_KEY = import.meta.env.PUBLIC_API_KEY || 'default-secret-key';
+
+async function apiFetch(path: string, options: RequestInit = {}) {
+    const response = await fetch(`${BACKEND_URL}${path}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': API_KEY,
+            ...options.headers,
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export interface User {
+    userId: string;
+    name: string;
+    telegramId: string;
+    totalSpent?: number;
+}
+
+export interface Expense {
+    expenseId: string;
+    amount: number;
+    description: string;
+    category: string;
+    timestamp: number;
+    payerId?: string;
+    source?: string; // Add source for combined lists
+}
+
+export interface Group {
+    groupId: string;
+    name: string;
+    members: User[];
+    expenses: Expense[];
+    balances: { userId: string; paidAmount: number; netBalance?: number }[];
+    totalSpent?: number;
+    memberCount?: number;
+    settlements?: { from: string; to: string; amount: number }[];
+}
+
+export async function getUserByUsername(username: string): Promise<User | null> {
+    if (!username) return null;
+    return apiFetch(`/api/users/by-username/${encodeURIComponent(username)}`);
+}
+
+export async function getPersonalExpenses(userId: string): Promise<Expense[]> {
+    const expenses = await apiFetch(`/api/personal/expenses/${userId}`);
+    return (expenses || []).map((e: any) => ({
+        ...e,
+        source: 'Personal'
+    }));
+}
+
+export async function getUserGroups(userId: string): Promise<Group[]> {
+    return apiFetch(`/api/users/${userId}/groups`) || [];
+}
+
+export async function getGroupDetails(groupId: string): Promise<Group | null> {
+    return apiFetch(`/api/groups/${groupId}`);
+}

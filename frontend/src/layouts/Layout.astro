@@ -1,0 +1,129 @@
+---
+import "../styles/global.css";
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Antigravity Finance Dashboard" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+		/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Outfit:wght@300;400;600;700&display=swap"
+			rel="stylesheet"
+		/>
+		<title>{title} | Antigravity Finance</title>
+	</head>
+	<body>
+		<main id="app-container">
+			<slot />
+		</main>
+
+		<nav class="bottom-nav">
+			<a href="/dashboard" class="nav-item active">
+				<span class="nav-icon">🏠</span>
+				<span class="nav-label">HOME</span>
+			</a>
+			<a href="#" class="nav-item">
+				<span class="nav-icon">👛</span>
+				<span class="nav-label">WALLET</span>
+			</a>
+			<div class="nav-scan">
+				<div class="scan-btn">
+					<span class="scan-icon">🔍</span>
+				</div>
+			</div>
+			<a href="#" class="nav-item">
+				<span class="nav-icon">📊</span>
+				<span class="nav-label">REPORTS</span>
+			</a>
+			<a href="#" class="nav-item">
+				<span class="nav-icon">👤</span>
+				<span class="nav-label">PROFILE</span>
+			</a>
+		</nav>
+	</body>
+</html>
+
+<style is:global>
+	main {
+		width: 100%;
+		max-width: 600px; /* Mobile-first inspired by image */
+		margin: 0 auto;
+		padding: 1.5rem 1.5rem 6rem 1.5rem;
+	}
+
+	.bottom-nav {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 85px;
+		background: #000;
+		border-top: 1px solid rgba(255, 255, 255, 0.05);
+		display: flex;
+		justify-content: space-around;
+		align-items: center;
+		padding: 0 1rem 1.5rem 1rem;
+		z-index: 1000;
+	}
+
+	.nav-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-decoration: none;
+		color: #555;
+		gap: 4px;
+		transition: all 0.3s ease;
+	}
+
+	.nav-item.active {
+		color: var(--primary);
+	}
+
+	.nav-icon {
+		font-size: 1.2rem;
+	}
+
+	.nav-label {
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+	}
+
+	.nav-scan {
+		position: relative;
+		top: -15px;
+	}
+
+	.scan-btn {
+		width: 60px;
+		height: 60px;
+		background: var(--gold-gradient);
+		border-radius: 18px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		box-shadow: 0 8px 20px rgba(235, 192, 63, 0.4);
+		transform: rotate(45deg);
+	}
+
+	.scan-icon {
+		font-size: 1.5rem;
+		transform: rotate(-45deg);
+		color: #000;
+	}
+</style>

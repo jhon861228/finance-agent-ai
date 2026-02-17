@@ -1,0 +1,279 @@
+openapi: 3.0.0
+info:
+  title: Finance Agent AI API
+  version: 1.0.0
+  description: API for managing shared group expenses and personal expenses.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+paths:
+  /api/commands:
+    post:
+      summary: Process a command
+      description: Execute state-changing commands for groups (CreateGroup, AddMember, AddExpense, SettleDebts).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, payload]
+              properties:
+                type:
+                  type: string
+                  enum: [CreateGroup, AddMember, AddExpense, SettleDebts]
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: Command processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/groups:
+    get:
+      summary: List all groups
+      responses:
+        '200':
+          description: A list of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupInfo'
+
+  /api/groups/{groupId}:
+    get:
+      summary: Get group details
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detailed group information including members and expenses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetails'
+        '404':
+          description: Group not found
+
+  /api/groups/{groupId}/members:
+    get:
+      summary: Get members of a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of group members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+
+  /api/users:
+    get:
+      summary: List all users
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                telegramId:
+                  type: string
+                userId:
+                  type: string
+                  description: Optional. If not provided, a UUID will be generated.
+      responses:
+        '200':
+          description: User created successfully
+
+  /api/personal/expenses/{userId}:
+    post:
+      summary: Record a personal expense
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, category, description]
+              properties:
+                amount:
+                  type: number
+                category:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Expense recorded successfully
+
+    get:
+      summary: Get personal expenses for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of personal expenses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PersonalExpense'
+
+    delete:
+      summary: Delete all personal expenses for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: All expenses deleted successfully
+
+  /api/personal/expenses/{userId}/{expenseId}:
+    delete:
+      summary: Delete a personal expense (Soft delete via Event Sourcing)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expense deleted successfully
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+
+components:
+  schemas:
+    GroupInfo:
+      type: object
+      properties:
+        groupId:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: number
+        createdBy:
+          type: string
+
+    GroupDetails:
+      type: object
+      properties:
+        groupId:
+          type: string
+        name:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        expenses:
+          type: array
+          items:
+            type: object
+        balances:
+          type: array
+          items:
+            type: object
+        debts:
+          type: array
+          items:
+            type: object
+        settlements:
+          type: array
+          items:
+            type: object
+
+    Member:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        telegramId:
+          type: string
+
+    User:
+      type: object
+      properties:
+        userId:
+          type: string
+        name:
+          type: string
+        telegramId:
+          type: string
+        createdAt:
+          type: number
+
+    PersonalExpense:
+      type: object
+      properties:
+        expenseId:
+          type: string
+        amount:
+          type: number
+        category:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: number

@@ -1,0 +1,460 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import {
+    getGroupDetails,
+    getUserByUsername,
+    type Expense,
+    type User,
+} from "../../lib/db";
+import { simplifyDebts } from "../../lib/debt";
+
+const { id } = Astro.params;
+const username = Astro.url.searchParams.get("username") || "";
+
+if (!id) return Astro.redirect("/dashboard?username=" + username);
+
+const group = await getGroupDetails(id);
+const currentUser = await getUserByUsername(username);
+
+if (!group || !currentUser)
+    return Astro.redirect("/dashboard?username=" + username);
+
+// Use projected stats
+const totalSpent = group.totalSpent || 0;
+const perPersonShare = totalSpent / (group.members.length || 1);
+
+const memberBalances: Record<string, number> = {};
+group.balances.forEach((b) => {
+    memberBalances[b.userId] = b.netBalance || 0;
+});
+
+const transactions = group.settlements || [];
+
+// Map User IDs to Names for display
+const idToName: Record<string, string> = {};
+group.members.forEach((m) => {
+    idToName[m.userId] = m.name;
+});
+---
+
+<Layout title={`Group: ${group.name}`}>
+    <div class="premium-group-detail">
+        <!-- Header -->
+        <header class="group-header">
+            <a href={`/dashboard?username=${username}`} class="back-btn-luxury">
+                <span>←</span>
+            </a>
+            <div class="group-title-container">
+                <span class="sec-label">GROUP ACCOUNT</span>
+                <h1 class="gold-text">{group.name}</h1>
+            </div>
+            <div class="group-options">
+                <span>⋮</span>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="group-stats-luxury">
+            <div class="stat-luxury-card">
+                <span class="stat-l-label">TOTAL SPENT</span>
+                <span class="stat-l-val gold-text"
+                    >${totalSpent.toFixed(2)}</span
+                >
+            </div>
+            <div class="stat-luxury-card">
+                <span class="stat-l-label">YOUR SHARE</span>
+                <span class="stat-l-val">${perPersonShare.toFixed(2)}</span>
+            </div>
+            <div class="stat-luxury-card">
+                <span class="stat-l-label">MEMBERS</span>
+                <span class="stat-l-val">{group.members.length}</span>
+            </div>
+        </section>
+
+        <!-- Settlements (Liquidations) -->
+        <section class="settlements-luxury">
+            <div class="sec-header">
+                <h2>LIQUIDATIONS</h2>
+                <span class="status-pill settled"
+                    >{transactions.length === 0 ? "SETTLED" : "PENDING"}</span
+                >
+            </div>
+            <div class="settlement-cards">
+                {
+                    transactions.length === 0 ? (
+                        <div class="premium-card empty-settlement">
+                            <span class="empty-icon">🥂</span>
+                            <p>All accounts are perfectly settled.</p>
+                        </div>
+                    ) : (
+                        transactions.map((t) => (
+                            <div class="premium-card settlement-card-alt">
+                                <div class="settle-flow">
+                                    <span class="s-name">
+                                        {idToName[t.from] || t.from}
+                                    </span>
+                                    <span class="s-arrow gold-text">→</span>
+                                    <span class="s-name">
+                                        {idToName[t.to] || t.to}
+                                    </span>
+                                </div>
+                                <div class="settle-amount gold-text">
+                                    ${t.amount.toFixed(2)}
+                                </div>
+                            </div>
+                        ))
+                    )
+                }
+            </div>
+        </section>
+
+        <!-- Expense History -->
+        <section class="group-expenses-luxury">
+            <div class="sec-header">
+                <h2>TRANSACTION HISTORY</h2>
+            </div>
+            <div class="luxury-expense-list">
+                {
+                    group.expenses.length === 0 ? (
+                        <p class="muted">No transactions recorded yet.</p>
+                    ) : (
+                        group.expenses
+                            .slice()
+                            .reverse()
+                            .map((exp) => (
+                                <div class="luxury-expense-item">
+                                    <div class="le-icon">💸</div>
+                                    <div class="le-meta">
+                                        <span class="le-desc">
+                                            {exp.description}
+                                        </span>
+                                        <span class="le-sub">
+                                            Paid by{" "}
+                                            {idToName[exp.payerId || ""] ||
+                                                "Unknown"}{" "}
+                                            • {exp.category}
+                                        </span>
+                                    </div>
+                                    <div class="le-val">
+                                        <span class="le-amount gold-text">
+                                            -${exp.amount.toFixed(2)}
+                                        </span>
+                                        <span class="le-date">
+                                            {new Date(
+                                                exp.timestamp,
+                                            ).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                    )
+                }
+            </div>
+        </section>
+
+        <!-- Member Balances -->
+        <section class="member-balances-luxury">
+            <div class="sec-header">
+                <h2>MEMBER STATUS</h2>
+            </div>
+            <div class="balances-grid">
+                {
+                    group.members.map((m) => {
+                        const bal = memberBalances[m.userId];
+                        return (
+                            <div class="bal-item">
+                                <div class="bal-user">
+                                    <div class="avatar-xs">
+                                        {m.name[0].toUpperCase()}
+                                    </div>
+                                    <span>{m.name}</span>
+                                </div>
+                                <span
+                                    class={`bal-val ${bal >= 0 ? "positive" : "negative"}`}
+                                >
+                                    {bal >= 0
+                                        ? `+ $${bal.toFixed(2)}`
+                                        : `- $${Math.abs(bal).toFixed(2)}`}
+                                </span>
+                            </div>
+                        );
+                    })
+                }
+            </div>
+        </section>
+    </div>
+</Layout>
+
+<style>
+    .premium-group-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+    }
+
+    .group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+    }
+
+    .back-btn-luxury {
+        text-decoration: none;
+        color: #fff;
+        font-size: 1.5rem;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #111;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .group-title-container {
+        text-align: center;
+    }
+
+    .sec-label {
+        font-size: 0.6rem;
+        letter-spacing: 0.15em;
+        color: #666;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .group-header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    .group-options {
+        font-size: 1.5rem;
+        color: #444;
+    }
+
+    /* Stats Grid */
+    .group-stats-luxury {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-luxury-card {
+        background: #0d0d0d;
+        border-radius: 20px;
+        padding: 1.2rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .stat-l-label {
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: #555;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-l-val {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    /* Settlements */
+    .sec-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .sec-header h2 {
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+        color: #fff;
+    }
+
+    .status-pill {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .status-pill.settled {
+        background: rgba(46, 204, 113, 0.1);
+        color: #2ecc71;
+    }
+
+    .settlement-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .empty-settlement {
+        text-align: center;
+        padding: 2.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        color: #666;
+    }
+
+    .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .settlement-card-alt {
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .settle-flow {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .s-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .s-arrow {
+        font-size: 1.2rem;
+        font-weight: 400;
+    }
+
+    .settle-amount {
+        font-size: 1.1rem;
+        font-weight: 800;
+        font-family: "Montserrat", sans-serif;
+    }
+
+    /* Expenses */
+    .luxury-expense-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .luxury-expense-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.2rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .le-icon {
+        width: 48px;
+        height: 48px;
+        background: #151515;
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .le-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .le-desc {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .le-sub {
+        font-size: 0.7rem;
+        color: #666;
+    }
+
+    .le-val {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .le-amount {
+        font-weight: 800;
+        font-size: 1rem;
+        font-family: "Montserrat", sans-serif;
+    }
+
+    .le-date {
+        font-size: 0.65rem;
+        color: #444;
+        font-weight: 600;
+    }
+
+    /* Balances */
+    .balances-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: #0d0d0d;
+        border-radius: 24px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .bal-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .bal-user {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .avatar-xs {
+        width: 28px;
+        height: 28px;
+        background: #222;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        font-weight: 800;
+        color: #888;
+    }
+
+    .bal-user span {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .bal-val {
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .bal-val.positive {
+        color: #2ecc71;
+    }
+
+    .bal-val.negative {
+        color: #e74c3c;
+    }
+</style>

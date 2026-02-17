@@ -1,0 +1,19 @@
+{
+  "name": "frontend",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@astrojs/node": "^9.5.3",
+    "@aws-sdk/client-dynamodb": "^3.990.0",
+    "@aws-sdk/util-dynamodb": "^3.990.0",
+    "astro": "^5.17.1",
+    "typescript": "^5.9.3"
+  }
+}
