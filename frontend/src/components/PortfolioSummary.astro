@@ -34,20 +34,21 @@ const centsPart = ((amount % 1) * 100).toFixed(0).padStart(2, "0");
 
 <style>
     .portfolio-card {
-        background: #0f0f0f;
-        border: 1px solid rgba(255, 255, 255, 0.03);
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
         border-radius: 32px;
         padding: 2.5rem 1.5rem;
         text-align: center;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        box-shadow: 0 10px 30px var(--glass-shadow);
     }
 
     .portfolio-title {
         font-size: 0.65rem;
         letter-spacing: 0.2em;
-        color: #999;
+        color: var(--text-muted);
         font-weight: 700;
     }
 

@@ -1,0 +1,93 @@
+---
+
+---
+
+<button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+    <span class="sun-icon">☀️</span>
+    <span class="moon-icon">🌙</span>
+</button>
+
+<style>
+    .theme-toggle {
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        color: var(--text);
+        padding: 8px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+    }
+
+    .theme-toggle:hover {
+        background: var(--primary-glow);
+        border-color: var(--primary);
+    }
+
+    .sun-icon {
+        display: none;
+    }
+
+    [data-theme="light"] .sun-icon {
+        display: none;
+    }
+
+    [data-theme="light"] .moon-icon {
+        display: block;
+    }
+
+    /* When in dark (default), show sun to switch to light */
+    .sun-icon {
+        display: block;
+    }
+    .moon-icon {
+        display: none;
+    }
+
+    /* When in light, show moon to switch to dark */
+    [data-theme="light"] .sun-icon {
+        display: none;
+    }
+    [data-theme="light"] .moon-icon {
+        display: block;
+    }
+</style>
+
+<script>
+    const theme = (() => {
+        if (
+            typeof localStorage !== "undefined" &&
+            localStorage.getItem("theme")
+        ) {
+            return localStorage.getItem("theme");
+        }
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            return "dark";
+        }
+        return "light";
+    })();
+
+    if (theme === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+    } else {
+        document.documentElement.setAttribute("data-theme", "dark");
+    }
+
+    window.localStorage.setItem("theme", theme);
+
+    const handleToggleClick = () => {
+        const element = document.documentElement;
+        const isDark = element.getAttribute("data-theme") === "dark";
+        const nextTheme = isDark ? "light" : "dark";
+        element.setAttribute("data-theme", nextTheme);
+        localStorage.setItem("theme", nextTheme);
+    };
+
+    document
+        .getElementById("theme-toggle")
+        .addEventListener("click", handleToggleClick);
+</script>

@@ -70,7 +70,7 @@ const { group, username, index } = Astro.props;
 
     .card-title {
         font-size: 0.6rem;
-        color: #888;
+        color: var(--text-muted);
         letter-spacing: 0.1em;
     }
 
@@ -91,7 +91,7 @@ const { group, username, index } = Astro.props;
         display: flex;
         gap: 8px;
         align-items: center;
-        color: #555;
+        color: var(--text-muted);
         font-size: 0.8rem;
     }
 
@@ -100,7 +100,8 @@ const { group, username, index } = Astro.props;
     }
 
     .num-end {
-        color: #999;
+        color: var(--text);
+        opacity: 0.7;
         margin-left: 10px;
         letter-spacing: 4px;
         font-weight: 600;
@@ -115,7 +116,7 @@ const { group, username, index } = Astro.props;
 
     .ch-label {
         font-size: 0.5rem;
-        color: #666;
+        color: var(--text-muted);
         display: block;
         margin-bottom: 2px;
     }
@@ -129,7 +130,7 @@ const { group, username, index } = Astro.props;
     .card-chip {
         width: 32px;
         height: 24px;
-        background: #444;
+        background: var(--secondary);
         border-radius: 4px;
         display: flex;
         padding: 4px;
@@ -137,7 +138,7 @@ const { group, username, index } = Astro.props;
 
     .chip-inner {
         flex: 1;
-        border: 1px solid #666;
+        border: 1px solid var(--glass-border);
         border-radius: 2px;
     }
 </style>

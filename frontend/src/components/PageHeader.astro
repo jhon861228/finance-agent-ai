@@ -85,7 +85,7 @@ const {
     .sec-label {
         font-size: 0.6rem;
         letter-spacing: 0.15em;
-        color: #666;
+        color: var(--text-muted);
         font-weight: 700;
         display: block;
         margin-bottom: 2px;
@@ -99,12 +99,13 @@ const {
     .notif-bell {
         width: 45px;
         height: 45px;
-        background: #121212;
+        background: var(--card-bg);
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 4px 10px var(--glass-shadow);
     }
 
     .bell-icon {

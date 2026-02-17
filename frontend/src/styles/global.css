@@ -12,10 +12,26 @@
   /* Surface Black */
   --text: #FFFFFF;
   --text-muted: #888888;
+  --nav-bg: #000000;
   --glass: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: rgba(0, 0, 0, 0.5);
   --gold-gradient: linear-gradient(135deg, #EBC03F 0%, #B28E2B 100%);
+  --card-gradient: linear-gradient(145deg, #1A1A1A 0%, #0D0D0D 100%);
+}
+
+[data-theme='light'] {
+  --bg: #F8F9FA;
+  --card-bg: #FFFFFF;
+  --text: #1A1A1A;
+  --text-muted: #666666;
+  --nav-bg: #FFFFFF;
+  --secondary: #E9ECEF;
+  --glass: rgba(0, 0, 0, 0.02);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-shadow: rgba(0, 0, 0, 0.1);
+  --card-gradient: linear-gradient(145deg, #FFFFFF 0%, #F1F3F5 100%);
+  /* Accent colors remains gold for premium feel */
 }
 
 * {
@@ -41,11 +57,12 @@ body {
 }
 
 .premium-card {
-  background: linear-gradient(145deg, #1A1A1A 0%, #0D0D0D 100%);
-  border: 1px solid rgba(235, 192, 63, 0.15);
+  background: var(--card-gradient);
+  border: 1px solid var(--glass-border);
   border-radius: 28px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10px 30px var(--glass-shadow);
 }
 
 .premium-card::before {

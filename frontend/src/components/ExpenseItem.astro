@@ -47,20 +47,20 @@ const dateStr = new Date(timestamp).toLocaleDateString();
         align-items: center;
         gap: 1rem;
         padding: 1.2rem 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid var(--glass-border);
     }
 
     .insight-icon {
         width: 48px;
         height: 48px;
-        background: #1a1a1a;
+        background: var(--secondary);
         border-radius: 12px;
         display: flex;
         justify-content: center;
         align-items: center;
         font-weight: 800;
-        color: #777;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        border: 1px solid var(--glass-border);
     }
 
     .insight-meta {
@@ -76,7 +76,7 @@ const dateStr = new Date(timestamp).toLocaleDateString();
 
     .insight-sub {
         font-size: 0.7rem;
-        color: #666;
+        color: var(--text-muted);
     }
 
     .insight-val {
@@ -93,7 +93,8 @@ const dateStr = new Date(timestamp).toLocaleDateString();
 
     .val-date {
         font-size: 0.65rem;
-        color: #444;
+        color: var(--text-muted);
+        opacity: 0.8;
         font-weight: 600;
     }
 </style>
