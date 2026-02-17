@@ -29,9 +29,19 @@ build/
 .terraform/
 *.tfstate
 *.tfstate.backup
+*.tfvars
+*.tfvars.json
+lambda_function.zip
 
 # Agent
 .agent/
 .agents/
 .gemini/
 .gemini_work_dir/
+
+# OS/General
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+*.tar.gz
