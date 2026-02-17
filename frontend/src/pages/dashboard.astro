@@ -1,283 +1,151 @@
 ---
+const username = (Astro.url.searchParams.get("username") || "").trim();
 import Layout from "../layouts/Layout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import PortfolioSummary from "../components/PortfolioSummary.astro";
 import GroupCard from "../components/GroupCard.astro";
 import ExpenseItem from "../components/ExpenseItem.astro";
 import "../styles/components.css";
+
+import {
+	getUserByUsername,
+	getPersonalExpenses,
+	getUserGroups,
+	type Expense,
+	type Group,
+} from "../lib/db";
+
+if (!username) {
+	return Astro.redirect("/");
+}
+
+const user = await getUserByUsername(username);
+
+if (!user) {
+	return Astro.redirect("/?error=UserNotFound");
+}
+
+const personalExpenses: Expense[] = await getPersonalExpenses(user.userId);
+const totalPersonalSpend = user.totalSpent || 0;
+const groups: Group[] = await getUserGroups(user.userId);
+
+// Unify expenses with source information
+const allExpenses = [
+	...personalExpenses.map((e) => ({
+		...e,
+		source: "Personal",
+		sourceType: "personal" as const,
+	})),
+	...groups.flatMap((g) =>
+		g.expenses
+			.filter((e) => e.payerId === user.userId)
+			.map((e) => ({
+				...e,
+				source: g.name,
+				sourceType: "group" as const,
+			})),
+	),
+].sort((a, b) => b.timestamp - a.timestamp);
 ---
 
 <Layout title="Dashboard">
 	<div class="premium-dashboard">
-		<div id="loading-overlay" class="loading-state">
-			<div class="loader"></div>
-			<p>Loading your premium dashboard...</p>
+		<PageHeader username={user.name} />
+
+		<PortfolioSummary amount={totalPersonalSpend} />
+
+		<!-- Action Grid -->
+		<div class="action-grid">
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>➤</span>
+				</div>
+				<span class="action-label">SEND</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>💵</span>
+				</div>
+				<span class="action-label">PAY</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>📈</span>
+				</div>
+				<span class="action-label">INVEST</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>⊕</span>
+				</div>
+				<span class="action-label">TOP UP</span>
+			</div>
 		</div>
 
-		<div id="dashboard-content" style="display: none;">
-			<div id="header-mount"></div>
-			<div id="summary-mount"></div>
+		<!-- Group Cards -->
+		<section class="cards-section">
+			<div class="sec-header">
+				<h2>YOUR GROUPS</h2>
+				<a href="#" class="manage-btn">MANAGE</a>
+			</div>
+			<div class="cards-scroll">
+				{
+					groups.map((group, index) => (
+						<GroupCard
+							group={group}
+							username={username}
+							index={index}
+						/>
+					))
+				}
+				{groups.length === 0 && <p class="muted">No groups yet.</p>}
+			</div>
+		</section>
 
-			<!-- Action Grid -->
-			<div class="action-grid">
-				<div class="action-item">
-					<div class="action-btn-p">
-						<span>➤</span>
-					</div>
-					<span class="action-label">SEND</span>
-				</div>
-				<div class="action-item">
-					<div class="action-btn-p">
-						<span>💵</span>
-					</div>
-					<span class="action-label">PAY</span>
-				</div>
-				<div class="action-item">
-					<div class="action-btn-p">
-						<span>📈</span>
-					</div>
-					<span class="action-label">INVEST</span>
-				</div>
-				<div class="action-item">
-					<div class="action-btn-p">
-						<span>⊕</span>
-					</div>
-					<span class="action-label">TOP UP</span>
+		<!-- Activity / Insights -->
+		<section class="insights-section">
+			<div class="sec-header">
+				<h2>MARKET INSIGHTS</h2>
+				<a href="#" class="view-all-btn">VIEW ALL</a>
+			</div>
+
+			<div class="activity-chart">
+				<div class="chart-bars">
+					{
+						[40, 60, 50, 70, 90, 80, 75, 85].map((h, i) => (
+							<div
+								class={`bar ${i === 4 ? "highlight" : ""}`}
+								style={`height: ${h}%`}
+							/>
+						))
+					}
 				</div>
 			</div>
 
-			<!-- Group Cards -->
-			<section class="cards-section">
-				<div class="sec-header">
-					<h2>YOUR GROUPS</h2>
-					<a href="#" class="manage-btn">MANAGE</a>
-				</div>
-				<div class="cards-scroll" id="groups-list">
-					<!-- Groups will be injected here -->
-				</div>
-			</section>
-
-			<!-- Activity / Insights -->
-			<section class="insights-section">
-				<div class="sec-header">
-					<h2>MARKET INSIGHTS</h2>
-					<a href="#" class="view-all-btn">VIEW ALL</a>
-				</div>
-
-				<div class="activity-chart">
-					<div class="chart-bars">
-						{
-							[40, 60, 50, 70, 90, 80, 75, 85].map((h, i) => (
-								<div
-									class={`bar ${i === 4 ? "highlight" : ""}`}
-									style={`height: ${h}%`}
-								/>
-							))
-						}
-					</div>
-				</div>
-
-				<div class="insights-list" id="expenses-list">
-					<!-- Expenses will be injected here -->
-				</div>
-			</section>
-		</div>
+			<div class="insights-list">
+				{
+					allExpenses
+						.slice(0, 5)
+						.map((exp) => (
+							<ExpenseItem
+								description={exp.description}
+								amount={exp.amount}
+								category={exp.category}
+								source={exp.source}
+								timestamp={exp.timestamp}
+							/>
+						))
+				}
+			</div>
+		</section>
 	</div>
 </Layout>
-
-<script>
-	import {
-		getUserByUsername,
-		getPersonalExpenses,
-		getUserGroups,
-	} from "../lib/db";
-
-	async function initDashboard() {
-		const urlParams = new URLSearchParams(window.location.search);
-		const username = (urlParams.get("username") || "").trim();
-
-		if (!username) {
-			window.location.href = "/";
-			return;
-		}
-
-		try {
-			const user = await getUserByUsername(username);
-
-			if (!user) {
-				window.location.href = "/?error=UserNotFound";
-				return;
-			}
-
-			// Fetch data
-			const [personalExpenses, groups] = await Promise.all([
-				getPersonalExpenses(user.userId),
-				getUserGroups(user.userId),
-			]);
-
-			const totalPersonalSpend = user.totalSpent || 0;
-
-			// Combined expenses
-			const allExpenses = [
-				...(personalExpenses || []).map((e: any) => ({
-					...e,
-					source: "Personal",
-				})),
-				...(groups || []).flatMap((g: any) =>
-					(g.expenses || [])
-						.filter((e: any) => e.payerId === user.userId)
-						.map((e: any) => ({
-							...e,
-							source: g.name,
-						})),
-				),
-			].sort((a, b) => b.timestamp - a.timestamp);
-
-			// Render
-			hideLoading();
-			renderHeader(user.name);
-			renderSummary(totalPersonalSpend);
-			renderGroups(groups, username);
-			renderExpenses(allExpenses.slice(0, 5));
-		} catch (error) {
-			console.error("Dashboard init error:", error);
-			// Show error UI if needed
-		}
-	}
-
-	function hideLoading() {
-		const loader = document.getElementById("loading-overlay");
-		const content = document.getElementById("dashboard-content");
-		if (loader) loader.style.display = "none";
-		if (content) content.style.display = "block";
-	}
-
-	function renderHeader(name: string) {
-		const mount = document.getElementById("header-mount");
-		if (mount) {
-			mount.innerHTML = `<div class="user-pill">
-				<div class="avatar-sm">${name[0].toUpperCase()}</div>
-				<div class="user-meta">
-					<span class="greet">Good Morning,</span>
-					<span class="name-bold">${name}</span>
-				</div>
-			</div>`;
-		}
-	}
-
-	function renderSummary(amount: number) {
-		const mount = document.getElementById("summary-mount");
-		if (mount) {
-			const wholePart = Math.floor(amount);
-			const centsPart = ((amount % 1) * 100).toFixed(0).padStart(2, "0");
-			mount.innerHTML = `<section class="portfolio-card">
-				<span class="portfolio-title">TOTAL WEALTH PORTFOLIO</span>
-				<div class="portfolio-amount">
-					<span class="currency">$</span>
-					<span class="big-gold">${wholePart.toLocaleString()}</span>
-					<span class="cents">.${centsPart}</span>
-				</div>
-				<div class="trend-pill">
-					<span class="trend-icon">📈</span>
-					<span class="trend-val">+12.4% this month</span>
-				</div>
-			</section>`;
-		}
-	}
-
-	function renderGroups(groups: any[], username: string) {
-		const list = document.getElementById("groups-list");
-		if (list) {
-			if (!groups || groups.length === 0) {
-				list.innerHTML = '<p class="muted">No groups yet.</p>';
-				return;
-			}
-			list.innerHTML = groups
-				.map(
-					(g, i) => `
-				<a href="/group/${g.groupId}?username=${username}" class="card-link">
-					<div class="premium-card group-card-alt ${i % 2 === 0 ? "gold-border" : "silver-border"}">
-						<div class="card-top">
-							<span class="card-title">GROUP ACCESS</span>
-							<span class="visa-style">FINANCE</span>
-						</div>
-						<div class="card-main">
-							<h3 class="group-name-card">${g.name}</h3>
-						</div>
-						<div class="card-bottom">
-							<div class="card-holder">
-								<span class="ch-label">MEMBERS</span>
-								<span class="ch-name">${g.members ? g.members.length : 0} USERS</span>
-							</div>
-						</div>
-					</div>
-				</a>
-			`,
-				)
-				.join("");
-		}
-	}
-
-	function renderExpenses(expenses: any[]) {
-		const list = document.getElementById("expenses-list");
-		if (list) {
-			if (!expenses || expenses.length === 0) {
-				list.innerHTML = '<p class="muted">No expenses yet.</p>';
-				return;
-			}
-			list.innerHTML = expenses
-				.map(
-					(e) => `
-				<div class="insight-item">
-					<div class="insight-icon">${e.description ? e.description[0].toUpperCase() : "?"}</div>
-					<div class="insight-meta">
-						<span class="insight-name">${e.description}</span>
-						<span class="insight-sub">${e.source} • ${e.category}</span>
-					</div>
-					<div class="insight-val">
-						<span class="val-num gold-text">$${e.amount.toFixed(2)}</span>
-						<span class="val-date">${new Date(e.timestamp).toLocaleDateString()}</span>
-					</div>
-				</div>
-			`,
-				)
-				.join("");
-		}
-	}
-
-	initDashboard();
-</script>
 
 <style>
 	.premium-dashboard {
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-	}
-
-	.loading-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 400px;
-		gap: 1rem;
-		color: var(--text-muted);
-	}
-
-	.loader {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--glass-border);
-		border-top-color: var(--primary);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	/* Action Grid */

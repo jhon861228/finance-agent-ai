@@ -63,7 +63,7 @@
             typeof localStorage !== "undefined" &&
             localStorage.getItem("theme")
         ) {
-            return localStorage.getItem("theme");
+            return localStorage.getItem("theme") as string;
         }
         if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
             return "dark";
@@ -89,5 +89,5 @@
 
     document
         .getElementById("theme-toggle")
-        .addEventListener("click", handleToggleClick);
+        ?.addEventListener("click", handleToggleClick);
 </script>

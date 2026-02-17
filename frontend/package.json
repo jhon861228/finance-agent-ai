@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.6",
-    "@astrojs/node": "^9.5.3",
     "@aws-sdk/client-dynamodb": "^3.990.0",
     "@aws-sdk/util-dynamodb": "^3.990.0",
     "astro": "^5.17.1",
+    "astro-aws-amplify": "^0.2.4",
     "typescript": "^5.9.3"
   }
 }

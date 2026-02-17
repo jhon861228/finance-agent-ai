@@ -5,6 +5,8 @@ resource "aws_amplify_app" "frontend" {
   # Si usas un token de acceso personal (PAT) para GitHub
   access_token = var.github_token 
 
+  platform = "WEB_COMPUTE"
+
   build_spec = <<-EOT
     version: 1
     frontend:
@@ -16,7 +18,7 @@ resource "aws_amplify_app" "frontend" {
           commands:
             - cd frontend && npm run build
       artifacts:
-        baseDirectory: frontend/dist
+        baseDirectory: frontend/.amplify-hosting
         files:
           - '**/*'
       cache:
@@ -24,22 +26,10 @@ resource "aws_amplify_app" "frontend" {
           - frontend/node_modules/**/*
   EOT
 
-  custom_rule {
-    source = "/<*>"
-    status = "200"
-    target = "/index.html"
-  }
-
-  # Regla para manejar rutas con extensiones (archivos estáticos)
-  custom_rule {
-    source = "/<*>.{js,css,png,jpg,jpeg,svg,gif,woff,woff2,ico,json}"
-    status = "200"
-    target = "/<*>.{js,css,png,jpg,jpeg,svg,gif,woff,woff2,ico,json}"
-  }
-
   environment_variables = {
-    ENV                = "prod"
-    PUBLIC_BACKEND_URL = aws_apigatewayv2_stage.default.invoke_url
+    ENV                  = "prod"
+    PUBLIC_BACKEND_URL   = aws_apigatewayv2_stage.default.invoke_url
+    _CUSTOM_IMAGE        = "amplify:al2023"
   }
 }
 

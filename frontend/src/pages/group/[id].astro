@@ -184,10 +184,10 @@ group.members.forEach((m) => {
     }
 
     .stat-luxury-card {
-        background: #0d0d0d;
+        background: var(--card-bg);
         border-radius: 20px;
         padding: 1.2rem 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -197,7 +197,7 @@ group.members.forEach((m) => {
     .stat-l-label {
         font-size: 0.55rem;
         font-weight: 800;
-        color: #555;
+        color: var(--text-muted);
         letter-spacing: 0.05em;
     }
 
@@ -220,7 +220,7 @@ group.members.forEach((m) => {
         flex-direction: column;
         gap: 0.5rem;
         align-items: center;
-        color: #666;
+        color: var(--text-muted);
     }
 
     .empty-icon {
@@ -268,10 +268,10 @@ group.members.forEach((m) => {
         display: flex;
         flex-direction: column;
         gap: 1rem;
-        background: #0d0d0d;
+        background: var(--card-bg);
         border-radius: 24px;
         padding: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--glass-border);
     }
 
     .bal-item {
@@ -289,7 +289,7 @@ group.members.forEach((m) => {
     .bal-user span {
         font-weight: 600;
         font-size: 0.85rem;
-        color: #999;
+        color: var(--text-muted);
     }
 
     .bal-val {
