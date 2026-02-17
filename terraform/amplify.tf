@@ -14,6 +14,7 @@ resource "aws_amplify_app" "frontend" {
       phases:
         preBuild:
           commands:
+            - rm -rf node_modules
             - npm install
         build:
           commands:
