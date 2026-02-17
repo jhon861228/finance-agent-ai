@@ -1,6 +1,6 @@
 resource "aws_amplify_app" "frontend" {
   name       = "${var.project_name}-frontend"
-  repository = "https://github.com/TU_USUARIO/TU_REPO" # TODO: Cambiar por el repo real
+  repository = "https://github.com/jhon861228/finance-agent-ai"
 
   # Si usas un token de acceso personal (PAT) para GitHub
   # access_token = var.github_token 
@@ -11,17 +11,18 @@ resource "aws_amplify_app" "frontend" {
       phases:
         preBuild:
           commands:
+            - cd frontend
             - npm install
         build:
           commands:
             - npm run build
       artifacts:
-        baseDirectory: dist
+        baseDirectory: frontend/dist
         files:
           - '**/*'
       cache:
         paths:
-          - node_modules/**/*
+          - frontend/node_modules/**/*
   EOT
 
   custom_rule {
@@ -35,9 +36,9 @@ resource "aws_amplify_app" "frontend" {
   }
 }
 
-resource "aws_amplify_branch" "master" {
+resource "aws_amplify_branch" "main" {
   app_id      = aws_amplify_app.frontend.id
-  branch_name = "master"
+  branch_name = "main"
 
   framework = "Astro"
   stage     = "PRODUCTION"
