@@ -5,5 +5,10 @@ import awsAmplify from 'astro-aws-amplify';
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
-  adapter: awsAmplify()
+  adapter: awsAmplify(),
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/noop'
+    }
+  }
 });
