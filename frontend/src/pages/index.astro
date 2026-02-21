@@ -15,6 +15,10 @@ console.log("BACKEND_URL", BACKEND_URL);
 console.log("API_KEY", API_KEY);
 
 if (Astro.request.method === "POST") {
+	console.log(
+		"Astro.request.method === POST",
+		Astro.request.method === "POST",
+	);
 	try {
 		console.log("Astro.request", Astro.request);
 		const data = await Astro.request.formData();
