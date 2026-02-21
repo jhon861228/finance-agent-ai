@@ -27,8 +27,9 @@ variable "llm_provider" {
   default     = "bedrock"
 }
 
-variable "github_token" {
-  description = "GitHub Personal Access Token for Amplify"
+variable "frontend_api_key" {
+  description = "Frontend API Key for Backend Communication"
   type        = string
   sensitive   = true
+  default     = "default-secret-key"
 }

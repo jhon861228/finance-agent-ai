@@ -1,0 +1,260 @@
+---
+const username = Astro.cookies.get("username")?.value;
+const token = Astro.cookies.get("token")?.value;
+
+import Layout from "../layouts/Layout.astro";
+import PageHeader from "../components/PageHeader.astro";
+import PortfolioSummary from "../components/PortfolioSummary.astro";
+import GroupCard from "../components/GroupCard.astro";
+import ExpenseItem from "../components/ExpenseItem.astro";
+import TelegramLink from "../components/TelegramLink.astro";
+import "../styles/components.css";
+
+import {
+	getUserByUsername,
+	getPersonalExpenses,
+	getUserGroups,
+	generateLinkingCode,
+	type Expense,
+	type Group,
+} from "../lib/db";
+
+if (!username || !token) {
+	return Astro.redirect("/");
+}
+
+const user = await getUserByUsername(username, token);
+
+if (!user) {
+	Astro.cookies.delete("token");
+	Astro.cookies.delete("username");
+	return Astro.redirect("/?error=UserNotFound");
+}
+
+const personalExpenses: Expense[] = await getPersonalExpenses(
+	user.userId,
+	token,
+);
+const totalPersonalSpend = user.totalSpent || 0;
+const groups: Group[] = await getUserGroups(user.userId, token);
+
+let linkCode = null;
+if (Astro.request.method === "POST") {
+	const data = await Astro.request.formData();
+	if (data.get("action") === "generate-code") {
+		linkCode = await generateLinkingCode(user.userId, token);
+	}
+}
+
+// Unify expenses with source information
+const allExpenses = [
+	...personalExpenses.map((e) => ({
+		...e,
+		source: "Personal",
+		sourceType: "personal" as const,
+	})),
+	...groups.flatMap((g) =>
+		g.expenses
+			.filter((e) => e.payerId === user.userId)
+			.map((e) => ({
+				...e,
+				source: g.name,
+				sourceType: "group" as const,
+			})),
+	),
+].sort((a, b) => b.timestamp - a.timestamp);
+---
+
+<Layout title="Dashboard">
+	<div class="premium-dashboard">
+		<PageHeader username={user.name} />
+
+		<PortfolioSummary amount={totalPersonalSpend} />
+
+		<!-- Action Grid -->
+		<div class="action-grid">
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>➤</span>
+				</div>
+				<span class="action-label">SEND</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>💵</span>
+				</div>
+				<span class="action-label">PAY</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>📈</span>
+				</div>
+				<span class="action-label">INVEST</span>
+			</div>
+			<div class="action-item">
+				<div class="action-btn-p">
+					<span>⊕</span>
+				</div>
+				<span class="action-label">TOP UP</span>
+			</div>
+		</div>
+
+		<!-- Telegram Link Section -->
+		<TelegramLink telegramId={user.telegramId} linkCode={linkCode} />
+
+		<!-- Group Cards -->
+		<section class="cards-section">
+			<div class="sec-header">
+				<h2>YOUR GROUPS</h2>
+				<a href="#" class="manage-btn">MANAGE</a>
+			</div>
+			<div class="cards-scroll">
+				{
+					groups.map((group, index) => (
+						<GroupCard
+							group={group}
+							username={username}
+							index={index}
+						/>
+					))
+				}
+				{groups.length === 0 && <p class="muted">No groups yet.</p>}
+			</div>
+		</section>
+
+		<!-- Activity / Insights -->
+		<section class="insights-section">
+			<div class="sec-header">
+				<h2>MARKET INSIGHTS</h2>
+				<a href="#" class="view-all-btn">VIEW ALL</a>
+			</div>
+
+			<div class="activity-chart">
+				<div class="chart-bars">
+					{
+						[40, 60, 50, 70, 90, 80, 75, 85].map((h, i) => (
+							<div
+								class={`bar ${i === 4 ? "highlight" : ""}`}
+								style={`height: ${h}%`}
+							/>
+						))
+					}
+				</div>
+			</div>
+
+			<div class="insights-list">
+				{
+					allExpenses
+						.slice(0, 5)
+						.map((exp) => (
+							<ExpenseItem
+								description={exp.description}
+								amount={exp.amount}
+								category={exp.category}
+								source={exp.source}
+								timestamp={exp.timestamp}
+							/>
+						))
+				}
+			</div>
+		</section>
+	</div>
+</Layout>
+
+<style>
+	.premium-dashboard {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+
+	/* Action Grid */
+	.action-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 1rem;
+	}
+
+	.action-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.8rem;
+	}
+
+	.action-btn-p {
+		width: 55px;
+		height: 55px;
+		background: var(--nav-bg);
+		border: 1px solid var(--glass-border);
+		border-radius: 16px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-size: 1.2rem;
+		color: var(--primary);
+		transition: all 0.2s ease;
+	}
+
+	.action-btn-p:hover {
+		background: var(--card-bg);
+		transform: scale(1.05);
+	}
+
+	.action-label {
+		font-size: 0.6rem;
+		font-weight: 800;
+		color: var(--text-muted);
+		letter-spacing: 0.05em;
+	}
+
+	/* Cards section */
+	.cards-scroll {
+		display: flex;
+		gap: 1rem;
+		overflow-x: auto;
+		padding-bottom: 1rem;
+		scrollbar-width: none;
+	}
+
+	.cards-scroll::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* Insights */
+	.activity-chart {
+		background: var(--card-bg);
+		height: 160px;
+		border-radius: 24px;
+		margin-bottom: 1.5rem;
+		display: flex;
+		align-items: flex-end;
+		padding: 1.5rem;
+		justify-content: space-between;
+		border: 1px solid var(--glass-border);
+	}
+
+	.chart-bars {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
+	}
+
+	.bar {
+		flex: 1;
+		background: var(--secondary);
+		border-radius: 4px;
+		transition: all 0.3s ease;
+	}
+
+	.bar.highlight {
+		background: var(--primary);
+	}
+
+	.insights-list {
+		display: flex;
+		flex-direction: column;
+	}
+</style>
