@@ -14,6 +14,7 @@ resource "aws_lambda_function" "telegram_handler" {
   runtime          = "nodejs22.x"
   timeout          = 30
 
+  environment {
     variables = {
       COMMAND_PROCESSOR_NAME = "${var.project_name}-command-processor"
       LLM_PARSER_NAME        = "${var.project_name}-llm-parser"
