@@ -7,12 +7,14 @@ import PageHeader from "../components/PageHeader.astro";
 import PortfolioSummary from "../components/PortfolioSummary.astro";
 import GroupCard from "../components/GroupCard.astro";
 import ExpenseItem from "../components/ExpenseItem.astro";
+import TelegramLink from "../components/TelegramLink.astro";
 import "../styles/components.css";
 
 import {
 	getUserByUsername,
 	getPersonalExpenses,
 	getUserGroups,
+	generateLinkingCode,
 	type Expense,
 	type Group,
 } from "../lib/db";
@@ -35,6 +37,14 @@ const personalExpenses: Expense[] = await getPersonalExpenses(
 );
 const totalPersonalSpend = user.totalSpent || 0;
 const groups: Group[] = await getUserGroups(user.userId, token);
+
+let linkCode = null;
+if (Astro.request.method === "POST") {
+	const data = await Astro.request.formData();
+	if (data.get("action") === "generate-code") {
+		linkCode = await generateLinkingCode(user.userId, token);
+	}
+}
 
 // Unify expenses with source information
 const allExpenses = [
@@ -88,6 +98,9 @@ const allExpenses = [
 				<span class="action-label">TOP UP</span>
 			</div>
 		</div>
+
+		<!-- Telegram Link Section -->
+		<TelegramLink telegramId={user.telegramId} linkCode={linkCode} />
 
 		<!-- Group Cards -->
 		<section class="cards-section">

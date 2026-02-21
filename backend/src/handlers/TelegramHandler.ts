@@ -61,6 +61,8 @@ export class TelegramHandler {
                     `• /groups - Lista los grupos a los que perteneces.\n` +
                     `• /addmember <grupo> <nombre> - Añade un miembro a un grupo.\n` +
                     `• /help - Muestra este mensaje de ayuda.\n\n` +
+                    `*Conectar con la Web:*\n` +
+                    `• /vincular <code> - Conecta tu cuenta con la web usando el código del dashboard.\n\n` +
                     `*También puedes hablarme normalmente:* \n` +
                     `• "Gasto 50 en comida"\n` +
                     `• "Gasto 100 en el grupo Viaje"\n` +
@@ -86,6 +88,30 @@ export class TelegramHandler {
 
                 await CommandProcessor.process(commandPayload);
                 await this.sendMessage(chatId, `✅ Grupo "${groupName}" creado con éxito.`);
+            } else if (text.startsWith('/vincular')) {
+                const code = text.replace('/vincular', '').trim();
+                if (!code) {
+                    await this.sendMessage(chatId, 'Por favor, introduce el código de vinculación. Ejemplo: /vincular B8X2');
+                    return;
+                }
+
+                const webUserId = await QueryService.consumeLinkingCode(code);
+                if (!webUserId) {
+                    await this.sendMessage(chatId, '❌ El código introducido no es válido o ha expirado.');
+                    return;
+                }
+
+                const commandPayload = {
+                    commandId: uuidv4(),
+                    type: 'LinkTelegram' as const,
+                    payload: {
+                        userId: webUserId,
+                        telegramId: telegramId
+                    }
+                };
+
+                await CommandProcessor.process(commandPayload);
+                await this.sendMessage(chatId, `✅ ¡Excelente! Tu cuenta de Telegram ha sido vinculada correctamente a tu perfil Web.`);
             } else if (text.startsWith('/groups')) {
                 const groups = await QueryService.getUserGroups(userId);
                 if (groups.length === 0) {

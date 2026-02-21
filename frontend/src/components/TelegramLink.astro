@@ -1,0 +1,108 @@
+---
+interface Props {
+    linkCode: string | null;
+    telegramId?: string | null;
+}
+
+const { linkCode, telegramId } = Astro.props;
+---
+
+<>
+    {
+        !telegramId && (
+            <section class="insights-section telegram-link-section">
+                <div class="sec-header">
+                    <h2>TELEGRAM LINKING</h2>
+                </div>
+                <div class="link-container">
+                    {linkCode ? (
+                        <div class="premium-card text-center">
+                            <p class="muted">Send this exactly to the bot:</p>
+                            <h3 class="gold-text copy-code">
+                                /vincular {linkCode}
+                            </h3>
+                            <p class="muted mt-2">
+                                The code expires in 15 minutes.
+                            </p>
+                        </div>
+                    ) : (
+                        <div class="premium-card text-center">
+                            <p class="muted mb-3">
+                                Connect your account to Telegram to record
+                                expenses on the go.
+                            </p>
+                            <form method="POST">
+                                <button
+                                    type="submit"
+                                    name="action"
+                                    value="generate-code"
+                                    class="telegram-btn w-full"
+                                >
+                                    <span class="btn-icon">✈️</span> LINK
+                                    TELEGRAM
+                                </button>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            </section>
+        )
+    }
+</>
+
+<style>
+    .telegram-link-section .premium-card {
+        padding: 1.5rem;
+        background: rgba(30, 215, 96, 0.05); /* Slight green tint */
+        border: 1px solid rgba(30, 215, 96, 0.2);
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mb-3 {
+        margin-bottom: 1rem;
+    }
+    .mt-2 {
+        margin-top: 0.5rem;
+    }
+    .w-full {
+        width: 100%;
+        display: block;
+        text-align: center;
+    }
+
+    .copy-code {
+        background: var(--nav-bg);
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        user-select: all;
+    }
+
+    .telegram-btn {
+        background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        letter-spacing: 1px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+    .telegram-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 136, 204, 0.6);
+    }
+</style>

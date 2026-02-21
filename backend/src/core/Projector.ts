@@ -1,6 +1,6 @@
 import { DynamoDBClient, UpdateItemCommand, PutItemCommand, DeleteItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { DomainEvent, EventType, ExpenseAddedEvent, GroupCreatedEvent, MemberAddedEvent, SettlementRecordedEvent, PersonalExpenseRecordedEvent, UserCreatedEvent, PersonalExpenseDeletedEvent, PersonalAccountClearedEvent } from '../events/Types';
+import { DomainEvent, EventType, ExpenseAddedEvent, GroupCreatedEvent, MemberAddedEvent, SettlementRecordedEvent, PersonalExpenseRecordedEvent, UserCreatedEvent, PersonalExpenseDeletedEvent, PersonalAccountClearedEvent, TelegramLinkedEvent } from '../events/Types';
 
 const client = new DynamoDBClient({
     region: process.env.AWS_REGION || 'us-east-1',
@@ -36,6 +36,9 @@ export class Projector {
                     break;
                 case EventType.PERSONAL_ACCOUNT_CLEARED:
                     await this.projectPersonalAccountCleared(event as PersonalAccountClearedEvent);
+                    break;
+                case EventType.TELEGRAM_LINKED:
+                    await this.projectTelegramLinked(event as TelegramLinkedEvent);
                     break;
             }
         } catch (error) {
@@ -282,6 +285,18 @@ export class Projector {
             UpdateExpression: updateExpression,
             ExpressionAttributeNames: expressionAttributeNames,
             ExpressionAttributeValues: marshall(expressionAttributeValues)
+        };
+        await client.send(new UpdateItemCommand(params));
+    }
+
+    private async projectTelegramLinked(event: TelegramLinkedEvent) {
+        const params = {
+            TableName: TABLE_NAME,
+            Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
+            UpdateExpression: 'SET telegramId = :tid',
+            ExpressionAttributeValues: marshall({
+                ':tid': event.payload.telegramId
+            })
         };
         await client.send(new UpdateItemCommand(params));
     }

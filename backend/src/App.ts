@@ -198,6 +198,16 @@ app.post('/api/users', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/users/:userId/link-code', async (req: Request, res: Response) => {
+    try {
+        const userId = req.params.userId as string;
+        const code = await QueryService.generateLinkingCode(userId);
+        res.json({ code });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Telegram Webhook (No security required here usually, but path is excluded above)
 app.post('/api/telegram', async (req: Request, res: Response) => {
     try {

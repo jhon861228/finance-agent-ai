@@ -1,4 +1,4 @@
-import { DomainEvent, EventType, UserCreatedEvent } from '../../events/Types';
+import { DomainEvent, EventType, UserCreatedEvent, TelegramLinkedEvent } from '../../events/Types';
 import { v4 as uuidv4 } from 'uuid';
 
 export class User {
@@ -22,6 +22,10 @@ export class User {
                 this.telegramId = payload.telegramId;
                 this.passwordHash = payload.passwordHash;
                 break;
+            case EventType.TELEGRAM_LINKED:
+                const linkedPayload = (event as TelegramLinkedEvent).payload;
+                this.telegramId = linkedPayload.telegramId;
+                break;
         }
     }
 
@@ -40,6 +44,25 @@ export class User {
                 name,
                 telegramId,
                 passwordHash
+            }
+        };
+        this.events.push(event);
+        this.apply(event);
+    }
+
+    public linkTelegram(telegramId: string) {
+        if (this.telegramId && this.telegramId !== telegramId) {
+            throw new Error(`User already linked to a different Telegram account.`);
+        }
+        if (this.telegramId === telegramId) return; // Already linked
+
+        const event: TelegramLinkedEvent = {
+            eventId: uuidv4(),
+            aggregateId: this.id,
+            type: EventType.TELEGRAM_LINKED,
+            timestamp: Date.now(),
+            payload: {
+                telegramId
             }
         };
         this.events.push(event);

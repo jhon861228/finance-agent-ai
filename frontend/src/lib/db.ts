@@ -73,3 +73,8 @@ export async function getUserGroups(userId: string, token?: string): Promise<Gro
 export async function getGroupDetails(groupId: string, token?: string): Promise<Group | null> {
     return apiFetch(`/api/groups/${groupId}`, {}, token);
 }
+
+export async function generateLinkingCode(userId: string, token?: string): Promise<string | null> {
+    const response = await apiFetch(`/api/users/${userId}/link-code`, { method: 'POST' }, token);
+    return response?.code || null;
+}

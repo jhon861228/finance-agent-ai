@@ -1,5 +1,5 @@
-import { DynamoDBClient, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { unmarshall } from '@aws-sdk/util-dynamodb';
+import { DynamoDBClient, QueryCommand, ScanCommand, PutItemCommand, DeleteItemCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { unmarshall, marshall } from '@aws-sdk/util-dynamodb';
 import { DebtCalculator } from './DebtCalculator';
 
 const client = new DynamoDBClient({
@@ -246,7 +246,11 @@ export class QueryService {
             const { Items } = await client.send(new ScanCommand(params));
             if (!Items || Items.length === 0) return null;
 
-            const doc = unmarshall(Items[0]);
+            const users = Items.map(i => unmarshall(i));
+            // Prefer the web account (with password metadata) if duplicates occur
+            const webUser = users.find(u => u.passwordHash);
+            const doc = webUser || users[0];
+
             return {
                 userId: doc.pk.split('#')[1],
                 name: doc.name,
@@ -312,6 +316,64 @@ export class QueryService {
             return groups;
         } catch (error) {
             console.error('QueryService getUserGroups Error:', error);
+            throw error;
+        }
+    }
+
+    static async generateLinkingCode(userId: string): Promise<string> {
+        // Generate a 6-character uppercase alphanumeric code
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        const params = {
+            TableName: TABLE_NAME,
+            Item: marshall({
+                pk: `LINK_CODE#${code}`,
+                sk: 'METADATA',
+                userId: userId,
+                // Optional: set a TTL attribute if DynamoDB TTL is configured, otherwise just a timestamp
+                createdAt: Date.now(),
+                expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
+            })
+        };
+
+        try {
+            await client.send(new PutItemCommand(params));
+            return code;
+        } catch (error) {
+            console.error('QueryService generateLinkingCode Error:', error);
+            throw error;
+        }
+    }
+
+    static async consumeLinkingCode(code: string): Promise<string | null> {
+        const pk = `LINK_CODE#${code.toUpperCase()}`;
+        const params = {
+            TableName: TABLE_NAME,
+            Key: marshall({
+                pk: pk,
+                sk: 'METADATA'
+            })
+        };
+
+        try {
+            const { Item } = await client.send(new GetItemCommand(params));
+            if (!Item) return null;
+
+            const doc = unmarshall(Item);
+
+            // Check expiry
+            if (doc.expiresAt && Date.now() > doc.expiresAt) {
+                // Expired, delete it and return null
+                await client.send(new DeleteItemCommand(params));
+                return null;
+            }
+
+            // Consume it (delete so it can't be used again)
+            await client.send(new DeleteItemCommand(params));
+
+            return doc.userId as string;
+        } catch (error) {
+            console.error('QueryService consumeLinkingCode Error:', error);
             throw error;
         }
     }

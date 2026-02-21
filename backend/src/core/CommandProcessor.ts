@@ -11,7 +11,7 @@ const projector = new Projector();
 
 export interface Command {
     commandId: string;
-    type: 'CreateGroup' | 'AddMember' | 'AddExpense' | 'SettleDebts' | 'RecordPersonalExpense' | 'CreateUser' | 'DeletePersonalExpense' | 'ClearPersonalExpenses';
+    type: 'CreateGroup' | 'AddMember' | 'AddExpense' | 'SettleDebts' | 'RecordPersonalExpense' | 'CreateUser' | 'DeletePersonalExpense' | 'ClearPersonalExpenses' | 'LinkTelegram';
     payload: any;
 }
 
@@ -89,6 +89,26 @@ export class CommandProcessor {
                 aggregateId: userId,
                 eventsCreated: newEvents.length,
                 payload: { ...command.payload, userId, password: undefined }
+            };
+        }
+
+        if (command.type === 'LinkTelegram') {
+            const userId = command.payload.userId;
+            const events = await eventStore.getEvents(userId);
+            const user = new User(userId, events);
+
+            user.linkTelegram(command.payload.telegramId);
+
+            const newEvents = user.getUncommittedEvents();
+            for (const event of newEvents) {
+                await eventStore.save(event);
+                await projector.handle(event);
+            }
+            return {
+                success: true,
+                aggregateId: userId,
+                eventsCreated: newEvents.length,
+                payload: { ...command.payload, userId }
             };
         }
 

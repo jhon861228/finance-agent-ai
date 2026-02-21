@@ -7,6 +7,7 @@ export enum EventType {
     USER_CREATED = 'UserCreated',
     PERSONAL_EXPENSE_DELETED = 'PersonalExpenseDeleted',
     PERSONAL_ACCOUNT_CLEARED = 'PersonalAccountCleared',
+    TELEGRAM_LINKED = 'TelegramLinked',
 }
 
 export interface BaseEvent {
@@ -84,9 +85,16 @@ export interface PersonalExpenseDeletedEvent extends BaseEvent {
     };
 }
 
+export interface TelegramLinkedEvent extends BaseEvent {
+    type: EventType.TELEGRAM_LINKED;
+    payload: {
+        telegramId: string;
+    };
+}
+
 export interface PersonalAccountClearedEvent extends BaseEvent {
     type: EventType.PERSONAL_ACCOUNT_CLEARED;
     payload: {};
 }
 
-export type DomainEvent = GroupCreatedEvent | MemberAddedEvent | ExpenseAddedEvent | SettlementRecordedEvent | PersonalExpenseRecordedEvent | UserCreatedEvent | PersonalExpenseDeletedEvent | PersonalAccountClearedEvent;
+export type DomainEvent = GroupCreatedEvent | MemberAddedEvent | ExpenseAddedEvent | SettlementRecordedEvent | PersonalExpenseRecordedEvent | UserCreatedEvent | PersonalExpenseDeletedEvent | PersonalAccountClearedEvent | TelegramLinkedEvent;

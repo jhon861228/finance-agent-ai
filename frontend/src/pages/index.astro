@@ -244,8 +244,14 @@ if (Astro.request.method === "POST") {
 		font-size: 0.9rem;
 	}
 
-	[data-theme="light"] .input-group input {
-		color: var(--text);
-		background: white;
+	:global([data-theme="light"]) .input-group input {
+		color: #1a1a1a;
+		background: #f8f9fa;
+		border-color: #cbd5e1;
+	}
+
+	:global([data-theme="light"]) .input-group input:focus {
+		border-color: var(--primary);
+		background: #ffffff;
 	}
 </style>
