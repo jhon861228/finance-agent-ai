@@ -46,7 +46,29 @@ if (Astro.request.method === "POST") {
 				body: JSON.stringify({ username, password }),
 			});
 
-			const result = await response.json();
+			const contentType = response.headers.get("content-type");
+			let result: any = {};
+			let rawBody = "";
+
+			try {
+				if (contentType && contentType.includes("application/json")) {
+					result = await response.json();
+				} else {
+					rawBody = await response.text();
+					console.log(
+						"[Auth] Raw response body (non-JSON):",
+						rawBody,
+					);
+					result = {
+						error:
+							rawBody ||
+							"Unexpected non-JSON response from server.",
+					};
+				}
+			} catch (e) {
+				console.error("[Auth] Failed to parse response:", e);
+				error = "Server integration error. Please check logs.";
+			}
 
 			if (!response.ok) {
 				console.error("[Auth Error] Authentication failed:", result);
