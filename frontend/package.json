@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "build:lambda": "astro build && cp server.js dist/ && cd dist && npm init -y && npm pkg set type=\"module\" && npm install express serverless-http --no-package-lock && zip -qr ../frontend_lambda.zip .",
+    "build:lambda": "astro build && cp server.mjs dist/ && cd dist && npm init -y && npm pkg set type=\"module\" && npm install express serverless-http --no-package-lock && zip -qr ../frontend_lambda.zip .",
     "preview": "astro preview",
     "astro": "astro"
   },
