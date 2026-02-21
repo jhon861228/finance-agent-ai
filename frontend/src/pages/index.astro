@@ -18,6 +18,7 @@ console.log("API_KEY", API_KEY);
 if (Astro.request.method === "POST") {
 	try {
 		const data = await Astro.request.formData();
+		console.log("data", data);
 		const action = data.get("action"); // 'login' or 'register'
 		const username = data.get("username")?.toString();
 		const password = data.get("password")?.toString();
