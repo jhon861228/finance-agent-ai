@@ -14,13 +14,34 @@ resource "aws_lambda_function" "telegram_handler" {
   runtime          = "nodejs22.x"
   timeout          = 30
 
-  environment {
     variables = {
       COMMAND_PROCESSOR_NAME = "${var.project_name}-command-processor"
       LLM_PARSER_NAME        = "${var.project_name}-llm-parser"
       TELEGRAM_BOT_TOKEN     = var.telegram_bot_token
       LLM_PROVIDER           = var.llm_provider
       GROQ_API_KEY           = var.groq_api_key
+      EVENT_STORE_TABLE      = aws_dynamodb_table.event_store.name
+      READ_MODELS_TABLE      = aws_dynamodb_table.read_models.name
+    }
+  }
+}
+
+resource "aws_lambda_function" "finance_api" {
+  function_name    = "${var.project_name}-api"
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  role             = aws_iam_role.lambda_exec.arn
+  handler          = "dist/handlers/ApiHandler.handler"
+  runtime          = "nodejs22.x"
+  timeout          = 30
+
+  environment {
+    variables = {
+      EVENT_STORE_TABLE = aws_dynamodb_table.event_store.name
+      READ_MODELS_TABLE = aws_dynamodb_table.read_models.name
+      API_KEY           = var.frontend_api_key
+      # In a real app, generate a proper secret
+      JWT_SECRET        = "finance-agent-ai-secret-key-for-jwt"
     }
   }
 }

@@ -9,31 +9,45 @@ resource "aws_apigatewayv2_stage" "default" {
   auto_deploy = true
 }
 
-resource "aws_apigatewayv2_integration" "telegram_lambda" {
+resource "aws_apigatewayv2_integration" "telegram_integration" {
   api_id           = aws_apigatewayv2_api.telegram_api.id
   integration_type = "AWS_PROXY"
   integration_uri  = aws_lambda_function.telegram_handler.invoke_arn
 }
 
+resource "aws_apigatewayv2_integration" "api_integration" {
+  api_id           = aws_apigatewayv2_api.telegram_api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.finance_api.invoke_arn
+}
+
 resource "aws_apigatewayv2_route" "telegram_route" {
   api_id    = aws_apigatewayv2_api.telegram_api.id
   route_key = "POST /webhook"
-  target    = "integrations/${aws_apigatewayv2_integration.telegram_lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.telegram_integration.id}"
 }
 
 # Catch-all route for the Express app
 resource "aws_apigatewayv2_route" "proxy" {
   api_id    = aws_apigatewayv2_api.telegram_api.id
   route_key = "ANY /{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.telegram_lambda.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.api_integration.id}"
 }
 
 resource "aws_lambda_permission" "api_gateway" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.telegram_handler.function_name
+  function_name = aws_lambda_function.finance_api.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.telegram_api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "telegram_api_gateway" {
+  statement_id  = "AllowTelegramExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.telegram_handler.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.telegram_api.execution_arn}/*/*/webhook"
 }
 
 output "api_gateway_url" {
