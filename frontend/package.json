@@ -4,19 +4,29 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "start": "astro dev",
     "build": "astro build",
-    "build:lambda": "astro build && cp server.mjs dist/ && cd dist && npm init -y && npm pkg set type=\"module\" && npm install express serverless-http --no-package-lock && zip -qr ../frontend_lambda.zip .",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/node": "^9.5.4",
-    "astro": "^5.17.2",
-    "express": "^5.2.1",
-    "serverless-http": "^4.0.0",
-    "typescript": "^5.9.3"
+    "@astrojs/vercel": "^8.0.0",
+    "astro": "^5.16.6",
+    "daisyui": "^5.5.14",
+    "http-status-codes": "^2.3.0",
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6"
+    "@astrojs/check": "^0.9.6",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^24.10.1",
+    "eslint": "^4.0.0",
+    "npm-run-all": "^1.1.3",
+    "prettier": "^3.7.4",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": "20.x || 22.x || 24.x"
   }
 }
