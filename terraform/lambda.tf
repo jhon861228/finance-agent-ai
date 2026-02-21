@@ -1,8 +1,23 @@
-# Archive file is used to zip the source code
+# Prepare a clean directory for zipping, excluding .env files
+resource "terraform_data" "prepare_lambda" {
+  input = sha256(join("", [for f in fileset("${path.module}/../backend", "{src/**,package*.json,tsconfig.json,dist/**}") : filesha256("${path.module}/../backend/${f}")]))
+
+  provisioner "local-exec" {
+    command = <<EOT
+      rm -rf ${path.module}/.lambda_payload
+      mkdir -p ${path.module}/.lambda_payload
+      # Copy everything except .env
+      rsync -av --exclude='.env' --exclude='.env.*' ${path.module}/../backend/ ${path.module}/.lambda_payload/
+    EOT
+  }
+}
+
+# Archive file points to the clean temporary directory
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../backend"
+  source_dir  = "${path.module}/.lambda_payload"
   output_path = "${path.module}/lambda_function.zip"
+  depends_on  = [terraform_data.prepare_lambda]
 }
 
 resource "aws_lambda_function" "telegram_handler" {
@@ -41,7 +56,6 @@ resource "aws_lambda_function" "finance_api" {
       EVENT_STORE_TABLE = aws_dynamodb_table.event_store.name
       READ_MODELS_TABLE = aws_dynamodb_table.read_models.name
       API_KEY           = var.frontend_api_key
-      # In a real app, generate a proper secret
       JWT_SECRET        = "finance-agent-ai-secret-key-for-jwt"
     }
   }

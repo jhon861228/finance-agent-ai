@@ -2,12 +2,10 @@ import { DynamoDBClient, QueryCommand, ScanCommand, PutItemCommand, DeleteItemCo
 import { unmarshall, marshall } from '@aws-sdk/util-dynamodb';
 import { DebtCalculator } from './DebtCalculator';
 
-const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-
 const client = new DynamoDBClient({
     region: process.env.AWS_REGION || 'us-east-1',
-    endpoint: (!isLambda && process.env.DYNAMODB_ENDPOINT) ? process.env.DYNAMODB_ENDPOINT : undefined,
-    credentials: (!isLambda && process.env.DYNAMODB_ENDPOINT) ? {
+    endpoint: process.env.DYNAMODB_ENDPOINT || undefined,
+    credentials: process.env.DYNAMODB_ENDPOINT ? {
         accessKeyId: 'fake',
         secretAccessKey: 'fake'
     } : undefined
