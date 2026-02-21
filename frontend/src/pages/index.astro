@@ -3,7 +3,6 @@ import Layout from "../layouts/Layout.astro";
 
 console.log("Ingresando al index");
 console.log("Astro.request.method", Astro.request.method);
-console.log("Astro.request", JSON.stringify(Astro.request));
 
 const BACKEND_URL =
 	import.meta.env.PUBLIC_BACKEND_URL || "http://localhost:3000";
@@ -17,8 +16,9 @@ console.log("API_KEY", API_KEY);
 
 if (Astro.request.method === "POST") {
 	try {
+		console.log("Astro.request", Astro.request);
 		const data = await Astro.request.formData();
-		console.log("data", data);
+		console.log("data", Object.fromEntries(data));
 		const action = data.get("action"); // 'login' or 'register'
 		const username = data.get("username")?.toString();
 		const password = data.get("password")?.toString();
