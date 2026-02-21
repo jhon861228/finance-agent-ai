@@ -8,6 +8,11 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY || "default-secret-key";
 let error = "";
 let success = "";
 
+console.log("BACKEND_URL", BACKEND_URL);
+console.log("API_KEY", API_KEY);
+console.log("Astro.request.method", Astro.request.method);
+console.log("Astro.request", JSON.stringify(Astro.request));
+
 if (Astro.request.method === "POST") {
 	try {
 		const data = await Astro.request.formData();
