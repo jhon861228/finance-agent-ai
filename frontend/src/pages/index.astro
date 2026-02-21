@@ -34,6 +34,7 @@ if (Astro.request.method === "POST") {
 			const result = await response.json();
 
 			if (!response.ok) {
+				console.error("[Auth Error] Authentication failed:", result);
 				error = result.error || "Authentication failed.";
 			} else {
 				if (action === "register") {
@@ -56,6 +57,10 @@ if (Astro.request.method === "POST") {
 			}
 		}
 	} catch (e) {
+		console.error(
+			"[Auth Exception] Unexpected error during form submission:",
+			e,
+		);
 		error = "An unexpected error occurred.";
 	}
 }
