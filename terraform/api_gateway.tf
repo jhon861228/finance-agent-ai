@@ -40,10 +40,4 @@ output "api_gateway_url" {
   value = aws_apigatewayv2_stage.default.invoke_url
 }
 
-# --- FRONTEND API GATEWAY ---
 
-
-
-output "frontend_url" {
-  value = aws_apigatewayv2_stage.frontend_default.invoke_url
-}
