@@ -191,7 +191,8 @@ export class QueryService {
                 userId: userDoc.pk.split('#')[1],
                 name: userDoc.name,
                 telegramId: userDoc.telegramId,
-                totalSpent: Number(userDoc.totalSpent || 0)
+                totalSpent: Number(userDoc.totalSpent || 0),
+                passwordHash: userDoc.passwordHash
             };
         } catch (error) {
             console.error('QueryService getUserByUsername Error:', error);

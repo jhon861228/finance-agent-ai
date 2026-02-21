@@ -1,4 +1,7 @@
 ---
+const username = Astro.cookies.get("username")?.value;
+const token = Astro.cookies.get("token")?.value;
+
 import Layout from "../../layouts/Layout.astro";
 import PageHeader from "../../components/PageHeader.astro";
 import ExpenseItem from "../../components/ExpenseItem.astro";
@@ -13,15 +16,20 @@ import {
 import { simplifyDebts } from "../../lib/debt";
 
 const { id } = Astro.params;
-const username = Astro.url.searchParams.get("username") || "";
 
-if (!id) return Astro.redirect("/dashboard?username=" + username);
+if (!id || !username || !token) {
+    if (!token) Astro.cookies.delete("username");
+    return Astro.redirect("/");
+}
 
-const group = await getGroupDetails(id);
-const currentUser = await getUserByUsername(username);
+const group = await getGroupDetails(id, token);
+const currentUser = await getUserByUsername(username, token);
 
-if (!group || !currentUser)
-    return Astro.redirect("/dashboard?username=" + username);
+if (!group || !currentUser) {
+    Astro.cookies.delete("token");
+    Astro.cookies.delete("username");
+    return Astro.redirect("/");
+}
 
 // Use projected stats
 const totalSpent = group.totalSpent || 0;

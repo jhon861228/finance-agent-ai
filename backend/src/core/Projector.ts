@@ -262,17 +262,26 @@ export class Projector {
     }
 
     private async projectUserCreated(event: UserCreatedEvent) {
+        let updateExpression = 'SET #name = :name, telegramId = :tid, createdAt = :ts, totalSpent = :zero';
+        const expressionAttributeNames: any = { '#name': 'name' };
+        const expressionAttributeValues: any = {
+            ':name': event.payload.name,
+            ':tid': event.payload.telegramId || null,
+            ':ts': event.timestamp,
+            ':zero': 0
+        };
+
+        if (event.payload.passwordHash) {
+            updateExpression += ', passwordHash = :pwd';
+            expressionAttributeValues[':pwd'] = event.payload.passwordHash;
+        }
+
         const params = {
             TableName: TABLE_NAME,
             Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-            UpdateExpression: 'SET #name = :name, telegramId = :tid, createdAt = :ts, totalSpent = :zero',
-            ExpressionAttributeNames: { '#name': 'name' },
-            ExpressionAttributeValues: marshall({
-                ':name': event.payload.name,
-                ':tid': event.payload.telegramId || null,
-                ':ts': event.timestamp,
-                ':zero': 0
-            })
+            UpdateExpression: updateExpression,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ExpressionAttributeValues: marshall(expressionAttributeValues)
         };
         await client.send(new UpdateItemCommand(params));
     }

@@ -18,10 +18,7 @@ const {
     <div class="left-section">
         {
             showBack ? (
-                <a
-                    href={`${backUrl}?username=${username}`}
-                    class="back-btn-luxury"
-                >
+                <a href={backUrl} class="back-btn-luxury">
                     <span>←</span>
                 </a>
             ) : (
@@ -46,9 +43,9 @@ const {
     }
 
     <div class="right-section">
-        <div class="notif-bell">
-            <span class="bell-icon">{showBack ? "⋮" : "🔔"}</span>
-        </div>
+        <a href="/logout" class="notif-bell logout-btn" title="Logout">
+            <span class="bell-icon">🚪</span>
+        </a>
     </div>
 </header>
 

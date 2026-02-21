@@ -5,6 +5,7 @@ export class User {
     id: string;
     name: string = '';
     telegramId?: string;
+    passwordHash?: string;
 
     private events: DomainEvent[] = [];
 
@@ -19,6 +20,7 @@ export class User {
                 const payload = (event as UserCreatedEvent).payload;
                 this.name = payload.name;
                 this.telegramId = payload.telegramId;
+                this.passwordHash = payload.passwordHash;
                 break;
         }
     }
@@ -27,7 +29,7 @@ export class User {
         return this.events;
     }
 
-    public createUser(name: string, telegramId?: string) {
+    public createUser(name: string, telegramId?: string, passwordHash?: string) {
         const event: UserCreatedEvent = {
             eventId: uuidv4(),
             aggregateId: this.id,
@@ -36,7 +38,8 @@ export class User {
             payload: {
                 userId: this.id,
                 name,
-                telegramId
+                telegramId,
+                passwordHash
             }
         };
         this.events.push(event);

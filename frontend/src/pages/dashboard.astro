@@ -1,5 +1,7 @@
 ---
-const username = (Astro.url.searchParams.get("username") || "").trim();
+const username = Astro.cookies.get("username")?.value;
+const token = Astro.cookies.get("token")?.value;
+
 import Layout from "../layouts/Layout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import PortfolioSummary from "../components/PortfolioSummary.astro";
@@ -15,19 +17,24 @@ import {
 	type Group,
 } from "../lib/db";
 
-if (!username) {
+if (!username || !token) {
 	return Astro.redirect("/");
 }
 
-const user = await getUserByUsername(username);
+const user = await getUserByUsername(username, token);
 
 if (!user) {
+	Astro.cookies.delete("token");
+	Astro.cookies.delete("username");
 	return Astro.redirect("/?error=UserNotFound");
 }
 
-const personalExpenses: Expense[] = await getPersonalExpenses(user.userId);
+const personalExpenses: Expense[] = await getPersonalExpenses(
+	user.userId,
+	token,
+);
 const totalPersonalSpend = user.totalSpent || 0;
-const groups: Group[] = await getUserGroups(user.userId);
+const groups: Group[] = await getUserGroups(user.userId, token);
 
 // Unify expenses with source information
 const allExpenses = [

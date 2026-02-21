@@ -71,7 +71,13 @@ export class CommandProcessor {
             const events = await eventStore.getEvents(userId);
             const user = new User(userId, events);
 
-            user.createUser(command.payload.name, command.payload.telegramId);
+            let passwordHash: string | undefined = undefined;
+            if (command.payload.password) {
+                const bcrypt = await import('bcrypt');
+                passwordHash = await bcrypt.hash(command.payload.password, 10);
+            }
+
+            user.createUser(command.payload.name, command.payload.telegramId, passwordHash);
 
             const newEvents = user.getUncommittedEvents();
             for (const event of newEvents) {
@@ -82,7 +88,7 @@ export class CommandProcessor {
                 success: true,
                 aggregateId: userId,
                 eventsCreated: newEvents.length,
-                payload: { ...command.payload, userId }
+                payload: { ...command.payload, userId, password: undefined }
             };
         }
 

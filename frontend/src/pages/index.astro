@@ -1,13 +1,80 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+
+const BACKEND_URL =
+	import.meta.env.PUBLIC_BACKEND_URL || "http://localhost:3000";
+const API_KEY = import.meta.env.PUBLIC_API_KEY || "default-secret-key";
+
+let error = "";
+let success = "";
+
+if (Astro.request.method === "POST") {
+	try {
+		const data = await Astro.request.formData();
+		const action = data.get("action"); // 'login' or 'register'
+		const username = data.get("username")?.toString();
+		const password = data.get("password")?.toString();
+
+		if (!username || !password) {
+			error = "Username and password are required.";
+		} else {
+			const endpoint =
+				action === "register"
+					? "/api/auth/register"
+					: "/api/auth/login";
+			const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-API-Key": API_KEY,
+				},
+				body: JSON.stringify({ username, password }),
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				error = result.error || "Authentication failed.";
+			} else {
+				if (action === "register") {
+					success = "Registration successful! Please log in.";
+				} else {
+					Astro.cookies.set("token", result.token, {
+						httpOnly: true,
+						secure: true,
+						path: "/",
+						maxAge: 60 * 60 * 24 * 7, // 7 days
+					});
+					Astro.cookies.set("username", result.user.name, {
+						httpOnly: true,
+						secure: true,
+						path: "/",
+						maxAge: 60 * 60 * 24 * 7,
+					});
+					return Astro.redirect("/dashboard");
+				}
+			}
+		}
+	} catch (e) {
+		error = "An unexpected error occurred.";
+	}
+}
 ---
 
-<Layout title="Welcome">
+<Layout title="Welcome - Login">
 	<div class="login-container">
 		<header>
 			<div class="logo">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path
+						d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+						stroke-linecap="round"
+						stroke-linejoin="round"></path>
 				</svg>
 				<h1 class="title-gradient">Antigravity Finance</h1>
 			</div>
@@ -16,13 +83,44 @@ import Layout from '../layouts/Layout.astro';
 
 		<section class="glass-panel login-box">
 			<h2>Access the Dashboard</h2>
-			<p>Enter your Telegram username to view your expenses.</p>
-			
-			<form action="/dashboard" method="GET" class="login-form">
+			<p>Login or create an account to view your expenses.</p>
+
+			{error && <div class="error-msg">{error}</div>}
+			{success && <div class="success-msg">{success}</div>}
+
+			<form method="POST" class="login-form">
 				<div class="input-group">
-					<input type="text" name="username" placeholder="e.g. Pepe" required autocomplete="off" />
+					<input
+						type="text"
+						name="username"
+						placeholder="Username (e.g. Pepe)"
+						required
+						autocomplete="username"
+					/>
 				</div>
-				<button type="submit" class="glow-btn">View My Finances</button>
+				<div class="input-group">
+					<input
+						type="password"
+						name="password"
+						placeholder="Password"
+						required
+						autocomplete="current-password"
+					/>
+				</div>
+				<div class="action-buttons">
+					<button
+						type="submit"
+						name="action"
+						value="login"
+						class="glow-btn">Login</button
+					>
+					<button
+						type="submit"
+						name="action"
+						value="register"
+						class="glow-btn outline">Register</button
+					>
+				</div>
 			</form>
 		</section>
 
@@ -80,6 +178,24 @@ import Layout from '../layouts/Layout.astro';
 		margin-bottom: 2rem;
 	}
 
+	.error-msg {
+		color: #ff4d4d;
+		background: rgba(255, 77, 77, 0.1);
+		padding: 10px;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		border: 1px solid rgba(255, 77, 77, 0.3);
+	}
+
+	.success-msg {
+		color: #4caf50;
+		background: rgba(76, 175, 80, 0.1);
+		padding: 10px;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+		border: 1px solid rgba(76, 175, 80, 0.3);
+	}
+
 	.login-form {
 		display: flex;
 		flex-direction: column;
@@ -102,9 +218,34 @@ import Layout from '../layouts/Layout.astro';
 		border-color: var(--primary);
 	}
 
+	.action-buttons {
+		display: flex;
+		gap: 1rem;
+	}
+
+	.action-buttons .glow-btn {
+		flex: 1;
+	}
+
+	.outline {
+		background: transparent !important;
+		border: 1px solid var(--primary);
+		color: var(--primary);
+		box-shadow: none;
+	}
+
+	.outline:hover {
+		background: rgba(var(--primary-rgb), 0.1) !important;
+	}
+
 	footer {
 		margin-top: 4rem;
 		color: rgba(255, 255, 255, 0.2);
 		font-size: 0.9rem;
+	}
+
+	[data-theme="light"] .input-group input {
+		color: var(--text);
+		background: white;
 	}
 </style>

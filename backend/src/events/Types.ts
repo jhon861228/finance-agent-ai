@@ -73,6 +73,7 @@ export interface UserCreatedEvent extends BaseEvent {
         userId: string;
         name: string;
         telegramId?: string;
+        passwordHash?: string;
     };
 }
 

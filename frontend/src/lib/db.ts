@@ -1,14 +1,20 @@
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3000';
 const API_KEY = import.meta.env.PUBLIC_API_KEY || 'default-secret-key';
 
-async function apiFetch(path: string, options: RequestInit = {}) {
+async function apiFetch(path: string, options: RequestInit = {}, token?: string) {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY,
+        ...options.headers as any,
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${BACKEND_URL}${path}`, {
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': API_KEY,
-            ...options.headers,
-        },
+        headers,
     });
 
     if (!response.ok) {
@@ -47,23 +53,23 @@ export interface Group {
     settlements?: { from: string; to: string; amount: number }[];
 }
 
-export async function getUserByUsername(username: string): Promise<User | null> {
+export async function getUserByUsername(username: string, token?: string): Promise<User | null> {
     if (!username) return null;
-    return apiFetch(`/api/users/by-username/${encodeURIComponent(username)}`);
+    return apiFetch(`/api/users/by-username/${encodeURIComponent(username)}`, {}, token);
 }
 
-export async function getPersonalExpenses(userId: string): Promise<Expense[]> {
-    const expenses = await apiFetch(`/api/personal/expenses/${userId}`);
+export async function getPersonalExpenses(userId: string, token?: string): Promise<Expense[]> {
+    const expenses = await apiFetch(`/api/personal/expenses/${userId}`, {}, token);
     return (expenses || []).map((e: any) => ({
         ...e,
         source: 'Personal'
     }));
 }
 
-export async function getUserGroups(userId: string): Promise<Group[]> {
-    return apiFetch(`/api/users/${userId}/groups`) || [];
+export async function getUserGroups(userId: string, token?: string): Promise<Group[]> {
+    return apiFetch(`/api/users/${userId}/groups`, {}, token) || [];
 }
 
-export async function getGroupDetails(groupId: string): Promise<Group | null> {
-    return apiFetch(`/api/groups/${groupId}`);
+export async function getGroupDetails(groupId: string, token?: string): Promise<Group | null> {
+    return apiFetch(`/api/groups/${groupId}`, {}, token);
 }
