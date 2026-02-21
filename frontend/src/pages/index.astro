@@ -21,6 +21,9 @@ if (Astro.request.method === "POST") {
 		const action = data.get("action"); // 'login' or 'register'
 		const username = data.get("username")?.toString();
 		const password = data.get("password")?.toString();
+		console.log("action", action);
+		console.log("username", username);
+		console.log("password", password);
 
 		if (!username || !password) {
 			error = "Username and password are required.";
