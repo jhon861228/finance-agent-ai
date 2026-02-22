@@ -31,13 +31,14 @@ export class PersonalAccount {
     }
 
     public recordExpense(amount: number, category: string, description: string, eventId?: string) {
+        const currentEventId = eventId || uuidv4();
         const event: PersonalExpenseRecordedEvent = {
-            eventId: eventId || uuidv4(),
+            eventId: currentEventId,
             aggregateId: this.id,
             type: EventType.PERSONAL_EXPENSE_RECORDED,
             timestamp: Date.now(),
             payload: {
-                expenseId: uuidv4(),
+                expenseId: currentEventId, // Use eventId as expenseId for stability
                 amount,
                 category,
                 description

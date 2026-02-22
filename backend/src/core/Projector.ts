@@ -259,11 +259,35 @@ export class Projector {
         });
 
         if (targetItem) {
-            const sk = unmarshall(targetItem).sk;
+            const doc = unmarshall(targetItem);
+            const sk = doc.sk;
+            const amount = doc.amount || 0;
+
+            // 1. Delete the item
             await client.send(new DeleteItemCommand({
                 TableName: TABLE_NAME,
                 Key: marshall({ pk: `USER#${event.aggregateId}`, sk })
             }));
+
+            // 2. Subtract from total (Idempotent)
+            try {
+                await client.send(new UpdateItemCommand({
+                    TableName: TABLE_NAME,
+                    Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
+                    UpdateExpression: 'ADD totalSpent :minusAmount SET lastEventId = :eid',
+                    ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
+                    ExpressionAttributeValues: marshall({
+                        ':minusAmount': -amount,
+                        ':eid': event.eventId
+                    })
+                }));
+            } catch (error: any) {
+                if (error.name === 'ConditionalCheckFailedException') {
+                    console.log(`[Projector] Event ${event.eventId} already processed for deletion. Skipping total adjustment.`);
+                    return;
+                }
+                throw error;
+            }
         }
     }
 
@@ -286,6 +310,25 @@ export class Projector {
                 TableName: TABLE_NAME,
                 Key: marshall({ pk: `USER#${event.aggregateId}`, sk })
             }));
+        }
+
+        // 2. Reset total
+        try {
+            await client.send(new UpdateItemCommand({
+                TableName: TABLE_NAME,
+                Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
+                UpdateExpression: 'SET totalSpent = :zero, lastEventId = :eid',
+                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
+                ExpressionAttributeValues: marshall({
+                    ':zero': 0,
+                    ':eid': event.eventId
+                })
+            }));
+        } catch (error: any) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                return;
+            }
+            throw error;
         }
     }
 

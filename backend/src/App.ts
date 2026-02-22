@@ -116,7 +116,11 @@ app.post('/api/personal/expenses/:userId', async (req: Request, res: Response) =
     try {
         const userId = req.params.userId as string;
         const payload = { ...req.body, userId };
-        const command = { commandId: uuidv4(), type: 'RecordPersonalExpense', payload } as Command;
+        const command = {
+            commandId: req.body.commandId || uuidv4(),
+            type: 'RecordPersonalExpense',
+            payload
+        } as Command;
         const result = await CommandProcessor.process(command);
         res.json(result);
     } catch (error: any) {
@@ -127,7 +131,7 @@ app.post('/api/personal/expenses/:userId', async (req: Request, res: Response) =
 app.delete('/api/personal/expenses/:userId/:expenseId', async (req: Request, res: Response) => {
     try {
         const command = {
-            commandId: uuidv4(),
+            commandId: req.body?.commandId || uuidv4(),
             type: 'DeletePersonalExpense',
             payload: { userId: req.params.userId as string, expenseId: req.params.expenseId as string }
         } as Command;
@@ -149,13 +153,17 @@ app.get('/api/users', async (req: Request, res: Response) => {
 
 app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, commandId } = req.body;
         if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
         const existing = await QueryService.getUserByUsername(username);
         if (existing) return res.status(400).json({ error: 'Username already taken' });
 
-        const command = { commandId: uuidv4(), type: 'CreateUser', payload: { name: username, password } } as Command;
+        const command = {
+            commandId: commandId || uuidv4(),
+            type: 'CreateUser',
+            payload: { name: username, password }
+        } as Command;
         const result = await CommandProcessor.process(command);
         res.json(result);
     } catch (error: any) {
