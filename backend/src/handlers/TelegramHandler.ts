@@ -32,6 +32,8 @@ export class TelegramHandler {
         const telegramId = body.message.from.id.toString();
         const userName = body.message.from.first_name;
         const text = body.message.text as string;
+        const updateId = body.update_id;
+        const stableCommandId = `tg_${updateId}`;
 
         console.log(`[DEBUG] Received message from ${userName} (${telegramId}): "${text}"`);
 
@@ -43,7 +45,7 @@ export class TelegramHandler {
         if (!user) {
             console.log(`User not found for telegramId ${telegramId}. Creating...`);
             const createResult = await CommandProcessor.process({
-                commandId: uuidv4(),
+                commandId: `${stableCommandId}_create`,
                 type: 'CreateUser',
                 payload: { name: userName, telegramId: telegramId }
             });
@@ -76,7 +78,7 @@ export class TelegramHandler {
                 }
 
                 const commandPayload = {
-                    commandId: uuidv4(),
+                    commandId: stableCommandId,
                     type: 'CreateGroup' as const,
                     payload: {
                         name: groupName,
@@ -102,7 +104,7 @@ export class TelegramHandler {
                 }
 
                 const commandPayload = {
-                    commandId: uuidv4(),
+                    commandId: stableCommandId,
                     type: 'LinkTelegram' as const,
                     payload: {
                         userId: webUserId,
@@ -157,7 +159,7 @@ export class TelegramHandler {
                 const existingUser = matchingUsers[0];
 
                 const commandPayload = {
-                    commandId: uuidv4(),
+                    commandId: stableCommandId,
                     type: 'AddMember' as const,
                     payload: {
                         groupId: group.groupId,
@@ -315,7 +317,7 @@ export class TelegramHandler {
                     }));
 
                     const commandPayload = {
-                        commandId: uuidv4(),
+                        commandId: stableCommandId,
                         type: 'AddExpense' as const,
                         payload: {
                             groupId: group.groupId,
@@ -333,7 +335,7 @@ export class TelegramHandler {
                 } else {
                     // Record Personal Expense
                     const commandPayload = {
-                        commandId: uuidv4(),
+                        commandId: stableCommandId,
                         type: 'RecordPersonalExpense' as const,
                         payload: {
                             userId,

@@ -46,9 +46,9 @@ export class ExpenseGroup {
         return this.events;
     }
 
-    public createGroup(name: string, createdBy: string, creatorName?: string, creatorTelegramId?: string) {
+    public createGroup(name: string, createdBy: string, creatorName?: string, creatorTelegramId?: string, eventId?: string) {
         const event: GroupCreatedEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.GROUP_CREATED,
             timestamp: Date.now(),
@@ -58,14 +58,14 @@ export class ExpenseGroup {
         this.apply(event);
 
         // Automatically add creator as the first member
-        this.addMember(createdBy, creatorName || 'Creator', creatorTelegramId);
+        this.addMember(createdBy, creatorName || 'Creator', creatorTelegramId, eventId ? `${eventId}-creator` : undefined);
     }
 
-    public addMember(userId: string, name: string, telegramId?: string) {
+    public addMember(userId: string, name: string, telegramId?: string, eventId?: string) {
         if (this.members.includes(userId)) return;
 
         const event: MemberAddedEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.MEMBER_ADDED,
             timestamp: Date.now(),
@@ -75,13 +75,13 @@ export class ExpenseGroup {
         this.apply(event);
     }
 
-    public addExpense(payerId: string, amount: number, description: string, splitDetails?: any) {
+    public addExpense(payerId: string, amount: number, description: string, splitDetails?: any, eventId?: string) {
         if (!this.members.includes(payerId)) {
             throw new Error('Payer must be a member of the group');
         }
 
         const event: ExpenseAddedEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.EXPENSE_ADDED,
             timestamp: Date.now(),
@@ -97,9 +97,9 @@ export class ExpenseGroup {
         this.apply(event);
     }
 
-    public settleDebts(transfers: { from: string; to: string; amount: number }[]) {
+    public settleDebts(transfers: { from: string; to: string; amount: number }[], eventId?: string) {
         const event: SettlementRecordedEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.SETTLEMENT_RECORDED,
             timestamp: Date.now(),

@@ -25,7 +25,8 @@ export class CommandProcessor {
             account.recordExpense(
                 command.payload.amount,
                 command.payload.category,
-                command.payload.description
+                command.payload.description,
+                command.commandId
             );
 
             const newEvents = account.getUncommittedEvents();
@@ -43,7 +44,7 @@ export class CommandProcessor {
             const events = await eventStore.getEvents(userId);
             const account = new PersonalAccount(userId, events);
 
-            account.deleteExpense(command.payload.expenseId);
+            account.deleteExpense(command.payload.expenseId, command.commandId);
 
             const newEvents = account.getUncommittedEvents();
             for (const event of newEvents) {
@@ -60,7 +61,7 @@ export class CommandProcessor {
             const events = await eventStore.getEvents(userId);
             const account = new PersonalAccount(userId, events);
 
-            account.clearAccount();
+            account.clearAccount(command.commandId);
 
             const newEvents = account.getUncommittedEvents();
             for (const event of newEvents) {
@@ -140,12 +141,13 @@ export class CommandProcessor {
                     command.payload.name,
                     command.payload.createdBy,
                     command.payload.creatorName,
-                    command.payload.creatorTelegramId
+                    command.payload.creatorTelegramId,
+                    command.commandId
                 );
                 break;
             case 'AddMember':
                 const newUserId = command.payload.userId || uuidv4();
-                group.addMember(newUserId, command.payload.name, command.payload.telegramId);
+                group.addMember(newUserId, command.payload.name, command.payload.telegramId, command.commandId);
                 // Attach generated ID to result context if needed, 
                 // but since process returns a fixed structure, we might need to expand it.
                 // For now, let's attach it to the command payload so we can retrieve it or return it.
@@ -157,11 +159,12 @@ export class CommandProcessor {
                     command.payload.payerId,
                     command.payload.amount,
                     command.payload.description,
-                    command.payload.splitDetails
+                    command.payload.splitDetails,
+                    command.commandId
                 );
                 break;
             case 'SettleDebts':
-                group.settleDebts(command.payload.transactions);
+                group.settleDebts(command.payload.transactions, command.commandId);
                 break;
             default:
                 throw new Error('Unknown command');

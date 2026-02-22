@@ -1,7 +1,7 @@
 ---
 interface Props {
-    linkCode: string | null;
-    telegramId?: string | null;
+    linkCode: string | null | undefined;
+    telegramId?: string | null | undefined;
 }
 
 const { linkCode, telegramId } = Astro.props;

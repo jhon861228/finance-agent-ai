@@ -30,9 +30,9 @@ export class PersonalAccount {
         return this.events;
     }
 
-    public recordExpense(amount: number, category: string, description: string) {
+    public recordExpense(amount: number, category: string, description: string, eventId?: string) {
         const event: PersonalExpenseRecordedEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.PERSONAL_EXPENSE_RECORDED,
             timestamp: Date.now(),
@@ -47,9 +47,9 @@ export class PersonalAccount {
         this.apply(event);
     }
 
-    public deleteExpense(expenseId: string) {
+    public deleteExpense(expenseId: string, eventId?: string) {
         const event: DomainEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.PERSONAL_EXPENSE_DELETED,
             timestamp: Date.now(),
@@ -61,9 +61,9 @@ export class PersonalAccount {
         this.apply(event);
     }
 
-    public clearAccount() {
+    public clearAccount(eventId?: string) {
         const event: DomainEvent = {
-            eventId: uuidv4(),
+            eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.PERSONAL_ACCOUNT_CLEARED,
             timestamp: Date.now(),
