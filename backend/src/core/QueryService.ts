@@ -377,4 +377,61 @@ export class QueryService {
             throw error;
         }
     }
+
+    static async getDailyUsage(userId: string, dateStr: string): Promise<number> {
+        const params = {
+            TableName: TABLE_NAME,
+            Key: marshall({
+                pk: `USER#${userId}`,
+                sk: `USAGE#${dateStr}`
+            })
+        };
+
+        try {
+            const { Item } = await client.send(new GetItemCommand(params));
+            if (!Item) return 0;
+            const doc = unmarshall(Item);
+            return Number(doc.count || 0);
+        } catch (error) {
+            console.error('QueryService getDailyUsage Error:', error);
+            return 0; // Fallback to 0
+        }
+    }
+
+    static async incrementDailyUsage(userId: string, dateStr: string): Promise<void> {
+        const params = {
+            TableName: TABLE_NAME,
+            Key: marshall({
+                pk: `USER#${userId}`,
+                sk: `USAGE#${dateStr}`
+            }),
+            UpdateExpression: 'SET #c = if_not_exists(#c, :start) + :inc, #exp = :expiry',
+            ExpressionAttributeNames: {
+                '#c': 'count',
+                '#exp': 'expiresAt'
+            },
+            ExpressionAttributeValues: marshall({
+                ':inc': 1,
+                ':start': 0,
+                // Expire usage record after 2 days to keep table clean (if TTL enabled)
+                ':expiry': Math.floor((Date.now() + 2 * 24 * 60 * 60 * 1000) / 1000)
+            })
+        };
+
+        try {
+            await client.send(new PutItemCommand({
+                TableName: TABLE_NAME,
+                Item: marshall({
+                    pk: `USER#${userId}`,
+                    sk: `USAGE#${dateStr}`,
+                    count: (await this.getDailyUsage(userId, dateStr)) + 1,
+                    expiresAt: Math.floor((Date.now() + 2 * 24 * 60 * 60 * 1000) / 1000)
+                })
+            }));
+            // Note: Using a simple Put for now since Update with marshall is more verbose, 
+            // but in a high-concurrency app, UpdateItem would be better.
+        } catch (error) {
+            console.error('QueryService incrementDailyUsage Error:', error);
+        }
+    }
 }

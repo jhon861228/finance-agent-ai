@@ -178,7 +178,17 @@ export class TelegramHandler {
 
         // 2. Handle Natural Language (Expenses and Queries)
         const { LlmParser } = await import('../core/LlmParser');
-        const parsedData = await LlmParser.parse(text);
+        let parsedData = null;
+
+        try {
+            parsedData = await LlmParser.parse(text, userId);
+        } catch (error: any) {
+            if (error.message === 'LIMIT_REACHED') {
+                await this.sendMessage(chatId, "⚠️ Has alcanzado el límite de 20 mensajes diarios para el asistente IA. Por hoy no puedo procesar más mensajes naturales, pero puedes seguir usando los comandos manuales.");
+                return;
+            }
+            console.error('[LLM] Parser error:', error);
+        }
 
         if (parsedData) {
             if (parsedData.intent === 'ListGroups') {

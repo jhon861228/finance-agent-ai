@@ -9,7 +9,7 @@ const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION 
 const BEDROCK_MODEL_ID = 'anthropic.claude-3-5-haiku-20241022-v1:0';
 
 export class LlmParser {
-    static async parse(text: string) {
+    static async parse(text: string, userId: string) {
         if (!text) {
             throw new Error('No text provided');
         }
@@ -40,17 +40,35 @@ export class LlmParser {
         `;
 
         const provider = process.env.LLM_PROVIDER || 'bedrock';
+        const dateStr = new Date().toISOString().split('T')[0];
 
+        // 1. Check Limits
+        const { QueryService } = await import('./QueryService');
+        const usage = await QueryService.getDailyUsage(userId, dateStr);
+
+        if (usage >= 20) {
+            console.log(`[LLM] Limit reached for user ${userId}: ${usage}/20`);
+            throw new Error('LIMIT_REACHED');
+        }
+
+        let result;
         if (provider === 'groq') {
             console.log(`[LLM] Using Groq provider`);
-            return this.parseWithGroq(prompt);
+            result = await this.parseWithGroq(prompt);
         } else if (provider === 'openai') {
             console.log(`[LLM] Using OpenAI provider`);
-            return this.parseWithOpenAI(prompt);
+            result = await this.parseWithOpenAI(prompt);
         } else {
             console.log(`[LLM] Using Bedrock provider`);
-            return this.parseWithBedrock(prompt);
+            result = await this.parseWithBedrock(prompt);
         }
+
+        // 2. Increment Usage on success (classification successful)
+        if (result) {
+            await QueryService.incrementDailyUsage(userId, dateStr);
+        }
+
+        return result;
     }
 
     private static async parseWithGroq(prompt: string) {
@@ -133,10 +151,19 @@ export class LlmParser {
 }
 
 export const handler: Handler = async (event) => {
-    const text = JSON.parse(event.body || '{}').text;
+    const body = JSON.parse(event.body || '{}');
+    const text = body.text;
+    const userId = body.userId;
+
+    if (!userId) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Missing userId' }),
+        };
+    }
 
     try {
-        const result = await LlmParser.parse(text);
+        const result = await LlmParser.parse(text, userId);
         return {
             statusCode: 200,
             body: JSON.stringify({ result }),
