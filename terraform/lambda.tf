@@ -143,3 +143,4 @@ resource "aws_cloudwatch_log_group" "llm_parser_logs" {
   name              = "/aws/lambda/${aws_lambda_function.llm_parser.function_name}"
   retention_in_days = 3
 }
+

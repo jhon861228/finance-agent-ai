@@ -31,7 +31,9 @@ export class CommandProcessor {
             const newEvents = account.getUncommittedEvents();
             for (const event of newEvents) {
                 await eventStore.save(event);
-                await projector.handle(event);
+                if (process.env.DYNAMODB_ENDPOINT) {
+                    await projector.handle(event);
+                }
             }
             return { success: true, aggregateId: userId, eventsCreated: newEvents.length };
         }
@@ -46,7 +48,9 @@ export class CommandProcessor {
             const newEvents = account.getUncommittedEvents();
             for (const event of newEvents) {
                 await eventStore.save(event);
-                await projector.handle(event);
+                if (process.env.DYNAMODB_ENDPOINT) {
+                    await projector.handle(event);
+                }
             }
             return { success: true, aggregateId: userId, eventsCreated: newEvents.length };
         }
@@ -61,7 +65,9 @@ export class CommandProcessor {
             const newEvents = account.getUncommittedEvents();
             for (const event of newEvents) {
                 await eventStore.save(event);
-                await projector.handle(event);
+                if (process.env.DYNAMODB_ENDPOINT) {
+                    await projector.handle(event);
+                }
             }
             return { success: true, aggregateId: userId, eventsCreated: newEvents.length };
         }
@@ -82,7 +88,9 @@ export class CommandProcessor {
             const newEvents = user.getUncommittedEvents();
             for (const event of newEvents) {
                 await eventStore.save(event);
-                await projector.handle(event);
+                if (process.env.DYNAMODB_ENDPOINT) {
+                    await projector.handle(event);
+                }
             }
             return {
                 success: true,
@@ -102,7 +110,9 @@ export class CommandProcessor {
             const newEvents = user.getUncommittedEvents();
             for (const event of newEvents) {
                 await eventStore.save(event);
-                await projector.handle(event);
+                if (process.env.DYNAMODB_ENDPOINT) {
+                    await projector.handle(event);
+                }
             }
             return {
                 success: true,
@@ -162,9 +172,9 @@ export class CommandProcessor {
 
         for (const event of newEvents) {
             await eventStore.save(event);
-            // In local/express mode, we need to trigger the projector manually
-            // since we don't have DynamoDB Streams connected to Lambda.
-            await projector.handle(event);
+            if (process.env.DYNAMODB_ENDPOINT) {
+                await projector.handle(event);
+            }
         }
 
         return {
