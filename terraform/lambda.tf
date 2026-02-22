@@ -1,14 +1,22 @@
 # Prepare a clean directory for zipping, excluding .env files
 resource "terraform_data" "prepare_lambda" {
-  input = sha256(join("", [for f in fileset("${path.module}/../backend", "src/**") : filesha256("${path.module}/../backend/${f}")]))
-
+  # Watch source code and build config
+  input = sha256(join("", [
+    for f in fileset("${path.module}/../backend", "{src/**,package.json,tsconfig.json}") : filesha256("${path.module}/../backend/${f}")
+  ]))
 
   provisioner "local-exec" {
     command = <<EOT
-      rm -rf ${path.module}/.lambda_payload
-      mkdir -p ${path.module}/.lambda_payload
-      # Copy everything except .env
-      rsync -av --exclude='.env' --exclude='.env.*' ${path.module}/../backend/ ${path.module}/.lambda_payload/
+      cd ${path.module}/../backend
+      npm install
+      npm run build
+      cd ${path.module}
+      rm -rf .lambda_payload
+      mkdir -p .lambda_payload
+      # Copy only necessary files for runtime (dist, node_modules, package.json)
+      rsync -av --exclude='.env' --exclude='.env.*' ../backend/dist/ .lambda_payload/dist/
+      rsync -av --exclude='.env' --exclude='.env.*' ../backend/node_modules/ .lambda_payload/node_modules/
+      cp ../backend/package.json .lambda_payload/
     EOT
   }
 }
