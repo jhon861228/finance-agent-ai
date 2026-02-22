@@ -1,6 +1,7 @@
 # Prepare a clean directory for zipping, excluding .env files
 resource "terraform_data" "prepare_lambda" {
-  input = sha256(join("", [for f in fileset("${path.module}/../backend", "{src/**,package*.json,tsconfig.json,dist/**}") : filesha256("${path.module}/../backend/${f}")]))
+  input = sha256(join("", [for f in fileset("${path.module}/../backend", "src/**") : filesha256("${path.module}/../backend/${f}")]))
+
 
   provisioner "local-exec" {
     command = <<EOT
@@ -115,4 +116,30 @@ resource "aws_lambda_function" "llm_parser" {
       LLM_PROVIDER = var.llm_provider
     }
   }
+}
+
+# CloudWatch Log Groups with 3-day retention
+resource "aws_cloudwatch_log_group" "telegram_handler_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.telegram_handler.function_name}"
+  retention_in_days = 3
+}
+
+resource "aws_cloudwatch_log_group" "finance_api_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.finance_api.function_name}"
+  retention_in_days = 3
+}
+
+resource "aws_cloudwatch_log_group" "command_processor_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.command_processor.function_name}"
+  retention_in_days = 3
+}
+
+resource "aws_cloudwatch_log_group" "event_stream_processor_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.event_stream_processor.function_name}"
+  retention_in_days = 3
+}
+
+resource "aws_cloudwatch_log_group" "llm_parser_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.llm_parser.function_name}"
+  retention_in_days = 3
 }
