@@ -6,7 +6,7 @@ import Groq from 'groq-sdk';
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 // Bedrock Model
-const BEDROCK_MODEL_ID = 'anthropic.claude-3-haiku-20240307-v1:0';
+const BEDROCK_MODEL_ID = 'anthropic.claude-3-5-haiku-20241022-v1:0';
 
 export class LlmParser {
     static async parse(text: string) {
