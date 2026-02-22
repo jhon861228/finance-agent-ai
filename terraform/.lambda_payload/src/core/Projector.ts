@@ -105,25 +105,13 @@ export class Projector {
         };
         await client.send(new UpdateItemCommand(expenseParams));
 
-        // 2. Update Group Metadata Total (Idempotent)
-        try {
-            await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: 'METADATA' }),
-                UpdateExpression: 'ADD totalSpent :amount SET lastEventId = :eid',
-                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                ExpressionAttributeValues: marshall({
-                    ':amount': event.payload.amount,
-                    ':eid': event.eventId
-                })
-            }));
-        } catch (error: any) {
-            if (error.name === 'ConditionalCheckFailedException') {
-                console.log(`[Projector] Event ${event.eventId} already processed for group ${event.aggregateId}. Skipping total update.`);
-                return; // Stop here to avoid further redundant processing
-            }
-            throw error;
-        }
+        // 2. Update Group Metadata Total
+        await client.send(new UpdateItemCommand({
+            TableName: TABLE_NAME,
+            Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: 'METADATA' }),
+            UpdateExpression: 'ADD totalSpent :amount',
+            ExpressionAttributeValues: marshall({ ':amount': event.payload.amount })
+        }));
 
         // 3. Update Payer Balance
         await client.send(new UpdateItemCommand({
@@ -217,26 +205,13 @@ export class Projector {
         };
         await client.send(new PutItemCommand(params));
 
-        // Update User Metadata Total (Idempotent)
-        try {
-            await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-                UpdateExpression: 'ADD totalSpent :amount SET lastEventId = :eid',
-                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                ExpressionAttributeValues: marshall({
-                    ':amount': event.payload.amount,
-                    ':eid': event.eventId
-                })
-            }));
-        } catch (error: any) {
-            if (error.name === 'ConditionalCheckFailedException') {
-                console.log(`[Projector] Event ${event.eventId} already processed for user ${event.aggregateId}. Skipping total update.`);
-                // We still want to make sure the expense item exists, but skipping total update is key
-                return;
-            }
-            throw error;
-        }
+        // Update User Metadata Total
+        await client.send(new UpdateItemCommand({
+            TableName: TABLE_NAME,
+            Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
+            UpdateExpression: 'ADD totalSpent :amount',
+            ExpressionAttributeValues: marshall({ ':amount': event.payload.amount })
+        }));
     }
 
     private async projectPersonalExpenseDeleted(event: PersonalExpenseDeletedEvent) {

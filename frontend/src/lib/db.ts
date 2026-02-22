@@ -78,3 +78,17 @@ export async function generateLinkingCode(userId: string, token?: string): Promi
     const response = await apiFetch(`/api/users/${userId}/link-code`, { method: 'POST' }, token);
     return response?.code || null;
 }
+
+export async function createGroup(name: string, createdBy: string, userName: string, telegramId: string, token?: string): Promise<any> {
+    return apiFetch('/api/groups', {
+        method: 'POST',
+        body: JSON.stringify({ name, createdBy, userName, telegramId })
+    }, token);
+}
+
+export async function addMember(groupId: string, name: string, userId?: string, token?: string): Promise<any> {
+    return apiFetch(`/api/groups/${groupId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ name, userId })
+    }, token);
+}

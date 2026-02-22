@@ -1,0 +1,258 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PageHeader from "../../components/PageHeader.astro";
+import "../../styles/components.css";
+import {
+    getUserGroups,
+    createGroup,
+    addMember,
+    getUserByUsername,
+    type Group,
+} from "../../lib/db";
+
+const username = Astro.cookies.get("username")?.value;
+const token = Astro.cookies.get("token")?.value;
+
+if (!username || !token) {
+    return Astro.redirect("/");
+}
+
+const me = await getUserByUsername(username, token);
+if (!me) return Astro.redirect("/");
+
+let error = "";
+let success = "";
+
+if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData();
+    const action = data.get("action");
+
+    try {
+        if (action === "create-group") {
+            const name = data.get("name")?.toString();
+            if (name) {
+                await createGroup(
+                    name,
+                    me.userId,
+                    username,
+                    me.telegramId || "",
+                    token,
+                );
+                success = `Group "${name}" created!`;
+            }
+        } else if (action === "add-member") {
+            const groupId = data.get("groupId")?.toString();
+            const memberUser = data.get("memberUsername")?.toString();
+
+            if (groupId && memberUser) {
+                const targetUser = await getUserByUsername(memberUser, token);
+                if (targetUser) {
+                    await addMember(
+                        groupId,
+                        memberUser,
+                        targetUser.userId,
+                        token,
+                    );
+                    success = `Added ${memberUser} to group!`;
+                } else {
+                    // If user not found in DB, we can still try to add them by name (legacy support)
+                    await addMember(groupId, memberUser, undefined, token);
+                    success = `Added ${memberUser} (as new profile) to group!`;
+                }
+            }
+        }
+    } catch (e: any) {
+        error = e.message || "Operation failed.";
+    }
+}
+
+const groups: Group[] = await getUserGroups(me.userId, token);
+---
+
+<Layout title="Manage Groups">
+    <div class="manage-groups-container">
+        <PageHeader username={me.name} title="Groups" showBack={true} />
+
+        {error && <div class="error-msg">{error}</div>}
+        {success && <div class="success-msg">{success}</div>}
+
+        <section class="glass-panel group-form-section">
+            <h3>Create New Group</h3>
+            <form method="POST" class="horizontal-form">
+                <input type="hidden" name="action" value="create-group" />
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Group Name (e.g. Trip to Paris)"
+                    required
+                />
+                <button type="submit" class="glow-btn">Create</button>
+            </form>
+        </section>
+
+        <section class="groups-list-section">
+            <h2 class="sec-title">YOUR GROUPS</h2>
+            <div class="groups-grid">
+                {
+                    groups.map((group) => (
+                        <div class="glass-panel group-manage-card">
+                            <div class="group-info">
+                                <h4>{group.name}</h4>
+                                <p class="muted">
+                                    {group.members.length} members
+                                </p>
+                            </div>
+
+                            <div class="add-member-zone">
+                                <form method="POST" class="add-member-form">
+                                    <input
+                                        type="hidden"
+                                        name="action"
+                                        value="add-member"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="groupId"
+                                        value={group.groupId}
+                                    />
+                                    <input
+                                        type="text"
+                                        name="memberUsername"
+                                        placeholder="User Name"
+                                        required
+                                    />
+                                    <button
+                                        type="submit"
+                                        class="glow-btn small"
+                                    >
+                                        Add
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="members-list">
+                                {group.members.map((m) => (
+                                    <span class="member-tag">{m.name}</span>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </section>
+    </div>
+</Layout>
+
+<style>
+    .manage-groups-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .sec-title {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+    }
+
+    .group-form-section {
+        padding: 1.5rem;
+    }
+
+    .group-form-section h3 {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .horizontal-form {
+        display: flex;
+        gap: 0.8rem;
+    }
+
+    .horizontal-form input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        padding: 10px 15px;
+        border-radius: 12px;
+        color: var(--text);
+    }
+
+    .groups-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .group-manage-card {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .group-info h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--primary);
+    }
+
+    .add-member-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .add-member-form input {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--glass-border);
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+
+    .glow-btn.small {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+    }
+
+    .members-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .member-tag {
+        background: var(--secondary);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+
+    .error-msg {
+        color: #ff4d4d;
+        background: rgba(255, 77, 77, 0.1);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 77, 77, 0.3);
+    }
+
+    .success-msg {
+        color: #4caf50;
+        background: rgba(76, 175, 80, 0.1);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    :global([data-theme="light"]) .horizontal-form input,
+    :global([data-theme="light"]) .add-member-form input {
+        background: #fff;
+        border-color: #cbd5e1;
+        color: #1a1a1a;
+    }
+</style>

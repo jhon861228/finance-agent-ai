@@ -12,6 +12,8 @@ const {
     showBack = false,
     backUrl = "/dashboard",
 } = Astro.props;
+
+import ThemeToggle from "./ThemeToggle.astro";
 ---
 
 <header class="luxury-head">
@@ -43,6 +45,7 @@ const {
     }
 
     <div class="right-section">
+        <ThemeToggle />
         <a href="/logout" class="notif-bell logout-btn" title="Logout">
             <span class="bell-icon">🚪</span>
         </a>
@@ -93,16 +96,29 @@ const {
         margin: 0;
     }
 
+    .right-section {
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+    }
+
     .notif-bell {
-        width: 45px;
-        height: 45px;
+        width: 40px;
+        height: 40px;
         background: var(--card-bg);
-        border-radius: 50%;
+        border-radius: 12px;
         display: flex;
         justify-content: center;
         align-items: center;
         border: 1px solid var(--glass-border);
         box-shadow: 0 4px 10px var(--glass-shadow);
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .notif-bell:hover {
+        background: var(--primary-glow);
+        border-color: var(--primary);
     }
 
     .bell-icon {

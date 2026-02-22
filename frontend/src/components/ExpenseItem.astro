@@ -19,6 +19,7 @@ const {
     isNegative = false,
 } = Astro.props;
 
+import { formatAmount } from "../lib/format";
 const dateStr = new Date(timestamp).toLocaleDateString();
 ---
 
@@ -35,7 +36,7 @@ const dateStr = new Date(timestamp).toLocaleDateString();
     </div>
     <div class="insight-val">
         <span class="val-num gold-text">
-            {isNegative ? "-" : ""}${amount.toFixed(2)}
+            {isNegative ? "-" : ""}${formatAmount(amount)}
         </span>
         <span class="val-date">{dateStr}</span>
     </div>

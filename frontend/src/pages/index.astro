@@ -11,24 +11,12 @@ const API_KEY = import.meta.env.PUBLIC_API_KEY || "default-secret-key";
 let error = "";
 let success = "";
 
-console.log("BACKEND_URL", BACKEND_URL);
-console.log("API_KEY", API_KEY);
-
 if (Astro.request.method === "POST") {
-	console.log(
-		"Astro.request.method === POST",
-		Astro.request.method === "POST",
-	);
 	try {
-		console.log("Astro.request", Astro.request);
 		const data = await Astro.request.formData();
-		console.log("data", Object.fromEntries(data));
 		const action = data.get("action"); // 'login' or 'register'
 		const username = data.get("username")?.toString();
 		const password = data.get("password")?.toString();
-		console.log("action", action);
-		console.log("username", username);
-		console.log("password", password);
 
 		if (!username || !password) {
 			error = "Username and password are required.";

@@ -5,22 +5,19 @@ interface Props {
     trend?: string;
 }
 
-const {
-    amount,
-    label = "TOTAL WEALTH PORTFOLIO",
-    trend = "+12.4% this month",
-} = Astro.props;
+const { amount, label = "TOTAL WEALTH PORTFOLIO" } = Astro.props;
 
-const wholePart = Math.floor(amount);
-const centsPart = ((amount % 1) * 100).toFixed(0).padStart(2, "0");
+import { formatAmount } from "../lib/format";
+
+// Month comparison logic
+const trend = Astro.props.trend || null;
 ---
 
 <section class="portfolio-card">
     <span class="portfolio-title">{label}</span>
     <div class="portfolio-amount">
         <span class="currency">$</span>
-        <span class="big-gold">{wholePart.toLocaleString()}</span>
-        <span class="cents">.{centsPart}</span>
+        <span class="big-gold">{formatAmount(amount)}</span>
     </div>
     {
         trend && (

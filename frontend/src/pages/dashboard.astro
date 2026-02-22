@@ -63,13 +63,45 @@ const allExpenses = [
 			})),
 	),
 ].sort((a, b) => b.timestamp - a.timestamp);
+
+// Calculate Month Comparison
+const now = new Date();
+const curMonth = now.getMonth();
+const curYear = now.getFullYear();
+
+const prevDate = new Date(curYear, curMonth - 1, 1);
+const pMonth = prevDate.getMonth();
+const pYear = prevDate.getFullYear();
+
+const curMonthTotal = allExpenses
+	.filter((e) => {
+		const d = new Date(e.timestamp);
+		return d.getMonth() === curMonth && d.getFullYear() === curYear;
+	})
+	.reduce((sum, e) => sum + e.amount, 0);
+
+const prevMonthTotal = allExpenses
+	.filter((e) => {
+		const d = new Date(e.timestamp);
+		return d.getMonth() === pMonth && d.getFullYear() === pYear;
+	})
+	.reduce((sum, e) => sum + e.amount, 0);
+
+let trend = null;
+if (prevMonthTotal > 0) {
+	const diff = ((curMonthTotal - prevMonthTotal) / prevMonthTotal) * 100;
+	const sign = diff >= 0 ? "+" : "";
+	trend = `${sign}${diff.toFixed(1)}% vs last month`;
+} else if (allExpenses.length > 0 && curMonthTotal > 0) {
+	trend = "First month of activity";
+}
 ---
 
 <Layout title="Dashboard">
 	<div class="premium-dashboard">
 		<PageHeader username={user.name} />
 
-		<PortfolioSummary amount={totalPersonalSpend} />
+		<PortfolioSummary amount={totalPersonalSpend} trend={trend} />
 
 		<!-- Action Grid -->
 		<div class="action-grid">
@@ -100,13 +132,16 @@ const allExpenses = [
 		</div>
 
 		<!-- Telegram Link Section -->
-		<TelegramLink telegramId={user.telegramId} linkCode={linkCode} />
+		<TelegramLink
+			telegramId={user.telegramId || undefined}
+			linkCode={linkCode || null}
+		/>
 
 		<!-- Group Cards -->
 		<section class="cards-section">
 			<div class="sec-header">
 				<h2>YOUR GROUPS</h2>
-				<a href="#" class="manage-btn">MANAGE</a>
+				<a href="/group/manage" class="manage-btn">MANAGE</a>
 			</div>
 			<div class="cards-scroll">
 				{

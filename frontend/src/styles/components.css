@@ -11,7 +11,7 @@
 .sec-header h2 {
     font-size: 0.9rem;
     letter-spacing: 0.05em;
-    color: #fff;
+    color: var(--text);
     margin: 0;
     text-transform: uppercase;
     font-family: 'Montserrat', sans-serif;
