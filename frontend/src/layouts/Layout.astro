@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import ThemeToggle from "../components/ThemeToggle.astro";
 
 interface Props {
 	title: string;
@@ -48,9 +47,7 @@ const { title } = Astro.props;
 		</script>
 	</head>
 	<body>
-		<header class="top-header">
-			<ThemeToggle />
-		</header>
+		<header class="top-header"></header>
 		<main id="app-container">
 			<slot />
 		</main>

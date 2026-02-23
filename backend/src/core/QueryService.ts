@@ -292,17 +292,17 @@ export class QueryService {
     }
 
     static async getUserGroups(userId: string) {
-        // Scan for memberships. In production, use a GSI on 'sk'.
-        const scanParams = {
+        const queryParams = {
             TableName: TABLE_NAME,
-            FilterExpression: 'sk = :sk',
+            IndexName: 'GSI1',
+            KeyConditionExpression: 'sk = :sk',
             ExpressionAttributeValues: {
                 ':sk': { S: `MEMBER#${userId}` }
             }
         };
 
         try {
-            const { Items: memberships } = await client.send(new ScanCommand(scanParams));
+            const { Items: memberships } = await client.send(new QueryCommand(queryParams));
             if (!memberships || memberships.length === 0) return [];
 
             const groupIds = memberships.map(m => unmarshall(m).pk.split('#')[1]);

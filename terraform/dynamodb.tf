@@ -1,8 +1,8 @@
 resource "aws_dynamodb_table" "event_store" {
-  name           = "${var.project_name}-events"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "aggregateId"
-  range_key      = "timestamp"
+  name         = "${var.project_name}-events"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "aggregateId"
+  range_key    = "timestamp"
 
   attribute {
     name = "aggregateId"
@@ -24,10 +24,10 @@ resource "aws_dynamodb_table" "event_store" {
 }
 
 resource "aws_dynamodb_table" "read_models" {
-  name           = "${var.project_name}-read-models"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "pk"
-  range_key      = "sk"
+  name         = "${var.project_name}-read-models"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "pk"
+  range_key    = "sk"
 
   attribute {
     name = "pk"
@@ -37,6 +37,13 @@ resource "aws_dynamodb_table" "read_models" {
   attribute {
     name = "sk"
     type = "S"
+  }
+
+  global_secondary_index {
+    name            = "GSI1"
+    hash_key        = "sk"
+    range_key       = "pk"
+    projection_type = "ALL"
   }
 
   tags = {

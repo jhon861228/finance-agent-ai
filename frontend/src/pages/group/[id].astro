@@ -10,6 +10,7 @@ import "../../styles/components.css";
 import {
     getGroupDetails,
     getUserByUsername,
+    addMember,
     type Expense,
     type User,
 } from "../../lib/db";
@@ -30,6 +31,44 @@ if (!group || !currentUser) {
     Astro.cookies.delete("username");
     return Astro.redirect("/");
 }
+
+let error = "";
+let success = "";
+
+if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData();
+    const action = data.get("action");
+
+    if (action === "add-member") {
+        const targetUsername = data.get("targetUsername")?.toString();
+        if (targetUsername) {
+            try {
+                const targetUser = await getUserByUsername(
+                    targetUsername,
+                    token,
+                );
+                if (targetUser) {
+                    await addMember(
+                        id,
+                        targetUsername,
+                        targetUser.userId,
+                        token,
+                    );
+                    success = `Added ${targetUsername} successfully!`;
+                    // Refresh group data
+                    return Astro.redirect(`/group/${id}?success=MemberAdded`);
+                } else {
+                    error = `User @${targetUsername} not found.`;
+                }
+            } catch (e: any) {
+                error = e.message || "Failed to add member.";
+            }
+        }
+    }
+}
+
+const flashSuccess = Astro.url.searchParams.get("success") === "MemberAdded";
+if (flashSuccess && !success) success = "Member added successfully!";
 
 // Use projected stats
 const totalSpent = group.totalSpent || 0;
@@ -57,6 +96,9 @@ group.members.forEach((m) => {
             showBack={true}
             backUrl="/dashboard"
         />
+
+        {error && <div class="error-msg">{error}</div>}
+        {success && <div class="success-msg">{success}</div>}
 
         <!-- Stats Grid -->
         <section class="group-stats-luxury">
@@ -148,6 +190,18 @@ group.members.forEach((m) => {
         <section class="member-balances-luxury">
             <div class="sec-header">
                 <h2>MEMBER STATUS</h2>
+                <div class="add-member-trigger">
+                    <form method="POST" class="inline-add-member">
+                        <input type="hidden" name="action" value="add-member" />
+                        <input
+                            type="text"
+                            name="targetUsername"
+                            placeholder="Add by @username"
+                            required
+                        />
+                        <button type="submit" class="mini-glow-btn">+</button>
+                    </form>
+                </div>
             </div>
             <div class="balances-grid">
                 {
@@ -311,5 +365,62 @@ group.members.forEach((m) => {
 
     .bal-val.negative {
         color: #e74c3c;
+    }
+
+    /* Add Member UI */
+    .inline-add-member {
+        display: flex;
+        gap: 0.5rem;
+        background: var(--card-bg);
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .inline-add-member input {
+        background: transparent;
+        border: none;
+        padding: 4px 8px;
+        color: var(--text);
+        font-size: 0.8rem;
+        width: 120px;
+        outline: none;
+    }
+
+    .mini-glow-btn {
+        background: var(--gold-gradient);
+        border: none;
+        border-radius: 8px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .mini-glow-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .error-msg {
+        background: rgba(231, 76, 60, 0.1);
+        color: #e74c3c;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(231, 76, 60, 0.2);
+        margin-bottom: 1rem;
+    }
+
+    .success-msg {
+        background: rgba(46, 204, 113, 0.1);
+        color: #2ecc71;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(46, 204, 113, 0.2);
+        margin-bottom: 1rem;
     }
 </style>
