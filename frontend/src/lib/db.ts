@@ -80,6 +80,7 @@ export async function generateLinkingCode(userId: string, token?: string): Promi
 }
 
 export async function createGroup(name: string, createdBy: string, userName: string, telegramId: string, token?: string): Promise<any> {
+    console.log('Creating group:', { name, createdBy, userName, telegramId });
     return apiFetch('/api/groups', {
         method: 'POST',
         body: JSON.stringify({ name, createdBy, userName, telegramId })

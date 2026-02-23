@@ -47,28 +47,30 @@ export class ExpenseGroup {
     }
 
     public createGroup(name: string, createdBy: string, creatorName?: string, creatorTelegramId?: string, eventId?: string) {
+        const now = Date.now();
         const event: GroupCreatedEvent = {
             eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.GROUP_CREATED,
-            timestamp: Date.now(),
+            timestamp: now,
             payload: { name, createdBy }
         };
         this.events.push(event);
         this.apply(event);
 
         // Automatically add creator as the first member
-        this.addMember(createdBy, creatorName || 'Creator', creatorTelegramId, eventId ? `${eventId}-creator` : undefined);
+        // Use now + 1 to avoid timestamp collision in DynamoDB (Sort Key is aggregateId + timestamp)
+        this.addMember(createdBy, creatorName || 'Creator', creatorTelegramId, eventId ? `${eventId}-creator` : undefined, now + 1);
     }
 
-    public addMember(userId: string, name: string, telegramId?: string, eventId?: string) {
+    public addMember(userId: string, name: string, telegramId?: string, eventId?: string, timestamp?: number) {
         if (this.members.includes(userId)) return;
 
         const event: MemberAddedEvent = {
             eventId: eventId || uuidv4(),
             aggregateId: this.id,
             type: EventType.MEMBER_ADDED,
-            timestamp: Date.now(),
+            timestamp: timestamp || Date.now(),
             payload: { userId, name, telegramId }
         };
         this.events.push(event);

@@ -17,6 +17,7 @@ export interface Command {
 
 export class CommandProcessor {
     static async process(command: Command) {
+        console.log(`[CommandProcessor] Received command: ${command.type}`, JSON.stringify(command.payload));
         if (command.type === 'RecordPersonalExpense') {
             const userId = command.payload.userId;
             const events = await eventStore.getEvents(userId);
@@ -137,6 +138,7 @@ export class CommandProcessor {
         // 2. Execute Command
         switch (command.type) {
             case 'CreateGroup':
+                console.log(`[CommandProcessor] Creating group: ${command.payload.name} for user ${command.payload.createdBy}`);
                 group.createGroup(
                     command.payload.name,
                     command.payload.createdBy,
@@ -144,6 +146,7 @@ export class CommandProcessor {
                     command.payload.creatorTelegramId,
                     command.commandId
                 );
+                console.log(`[CommandProcessor] Group created in aggregate. Events: ${group.getUncommittedEvents().length}`);
                 break;
             case 'AddMember':
                 const newUserId = command.payload.userId || uuidv4();
@@ -172,6 +175,7 @@ export class CommandProcessor {
 
         // 3. Persist Events
         const newEvents = group.getUncommittedEvents().filter(e => !events.find(existing => existing.eventId === e.eventId));
+        console.log(`[CommandProcessor] Saving ${newEvents.length} new events for group ${groupId}`);
 
         for (const event of newEvents) {
             await eventStore.save(event);

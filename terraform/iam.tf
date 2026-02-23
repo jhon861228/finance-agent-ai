@@ -34,22 +34,24 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem"
         ],
-        Effect   = "Allow"
+        Effect = "Allow"
         Resource = [
-            aws_dynamodb_table.event_store.arn,
-            aws_dynamodb_table.read_models.arn
+          aws_dynamodb_table.event_store.arn,
+          "${aws_dynamodb_table.event_store.arn}/index/*",
+          aws_dynamodb_table.read_models.arn,
+          "${aws_dynamodb_table.read_models.arn}/index/*"
         ]
       },
       {
         Action = [
-            "dynamodb:GetRecords",
-            "dynamodb:GetShardIterator",
-            "dynamodb:DescribeStream",
-            "dynamodb:ListStreams"
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:DescribeStream",
+          "dynamodb:ListStreams"
         ],
         Effect = "Allow"
         Resource = [
-            "${aws_dynamodb_table.event_store.arn}/stream/*"
+          "${aws_dynamodb_table.event_store.arn}/stream/*"
         ]
       }
     ]

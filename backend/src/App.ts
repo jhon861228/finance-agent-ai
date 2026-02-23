@@ -199,6 +199,43 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/groups', async (req: Request, res: Response) => {
+    try {
+        const { name, createdBy, userName, telegramId } = req.body;
+        const command: Command = {
+            commandId: uuidv4(),
+            type: 'CreateGroup',
+            payload: { name, createdBy, userName, telegramId }
+        };
+        const result = await CommandProcessor.process(command);
+        // Delay to allow projection to finish for immediate visibility
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        res.json(result);
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/groups/:groupId/members', async (req: Request, res: Response) => {
+    try {
+        const { groupId } = req.params;
+        const { name, userId } = req.body;
+        const command: Command = {
+            commandId: uuidv4(),
+            type: 'AddMember',
+            payload: { groupId, name, userId }
+        };
+        const result = await CommandProcessor.process(command);
+        // Delay to allow projection to finish for immediate visibility
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        res.json(result);
+    } catch (error: any) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/users', async (req: Request, res: Response) => {
     try {
         const command = { commandId: uuidv4(), type: 'CreateUser', payload: req.body } as Command;

@@ -206,7 +206,7 @@ group.members.forEach((m) => {
             <div class="balances-grid">
                 {
                     group.members.map((m) => {
-                        const bal = memberBalances[m.userId];
+                        const bal = memberBalances[m.userId] || 0;
                         return (
                             <div class="bal-item">
                                 <div class="bal-user">
