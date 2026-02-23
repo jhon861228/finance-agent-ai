@@ -47,6 +47,7 @@ app.post('/api/commands', async (req: Request, res: Response) => {
     }
 });
 
+
 // QUERY ROUTES
 app.get('/api/users/by-username/:username', async (req: Request, res: Response) => {
     try {
