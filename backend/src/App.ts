@@ -116,9 +116,26 @@ app.get('/api/personal/expenses/:userId', async (req: Request, res: Response) =>
 app.post('/api/personal/expenses/:userId', async (req: Request, res: Response) => {
     try {
         const userId = req.params.userId as string;
-        const payload = { ...req.body, userId };
+        let { amount, description, category, commandId } = req.body;
+
+        if (!category || category.trim() === '') {
+            try {
+                const { LlmParser } = await import('./core/LlmParser');
+                const llmResult = await LlmParser.parse(`Gasto: ${description}, Monto: ${amount}`, userId);
+                if (llmResult && llmResult.category) {
+                    category = llmResult.category;
+                } else {
+                    category = 'General';
+                }
+            } catch (llmError) {
+                console.error('[LLM Error] Fallback to General:', llmError);
+                category = 'General';
+            }
+        }
+
+        const payload = { amount, description, category, userId };
         const command = {
-            commandId: req.body.commandId || uuidv4(),
+            commandId: commandId || uuidv4(),
             type: 'RecordPersonalExpense',
             payload
         } as Command;

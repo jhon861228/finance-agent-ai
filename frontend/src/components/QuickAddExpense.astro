@@ -1,0 +1,210 @@
+---
+interface Props {
+    userId: string;
+    token: string;
+}
+
+const { userId, token } = Astro.props;
+---
+
+<div id="quick-add-overlay" class="modal-overlay">
+    <div id="quick-add-sheet" class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <h2>NUEVO GASTO</h2>
+            <button id="close-quick-add" class="close-btn">×</button>
+        </div>
+
+        <form id="quick-add-form" class="sheet-form">
+            <div class="input-group-luxury">
+                <label for="qa-amount">CUÁNTO</label>
+                <input
+                    type="number"
+                    id="qa-amount"
+                    name="amount"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                />
+            </div>
+
+            <div class="input-group-luxury">
+                <label for="qa-desc">QUÉ</label>
+                <input
+                    type="text"
+                    id="qa-desc"
+                    name="description"
+                    placeholder="Ej. Starbucks, Alquiler..."
+                    required
+                />
+            </div>
+
+            <div class="input-group-luxury">
+                <label for="qa-cat">CATEGORÍA (OPCIONAL)</label>
+                <input
+                    type="text"
+                    id="qa-cat"
+                    name="category"
+                    placeholder="Dejar vacío para auto-clasificar"
+                />
+            </div>
+
+            <button type="submit" id="qa-submit" class="glow-btn w-full">
+                GUARDAR GASTO
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        display: block;
+        opacity: 1;
+    }
+
+    .bottom-sheet {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: var(--bg);
+        border-top: 1px solid var(--glass-border);
+        border-radius: 32px 32px 0 0;
+        padding: 1.5rem 2rem 3rem 2rem;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay.active .bottom-sheet {
+        transform: translateY(0);
+    }
+
+    .sheet-handle {
+        width: 40px;
+        height: 4px;
+        background: var(--glass-border);
+        border-radius: 2px;
+        margin: 0 auto 1.5rem auto;
+    }
+
+    .sheet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .sheet-header h2 {
+        font-family: "Montserrat", sans-serif;
+        font-size: 1.2rem;
+        letter-spacing: 0.1em;
+        margin: 0;
+    }
+
+    .close-btn {
+        background: var(--secondary);
+        border: 1px solid var(--glass-border);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .sheet-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    #qa-amount {
+        font-size: 2rem;
+        text-align: center;
+        font-weight: 800;
+        color: var(--primary);
+    }
+</style>
+
+<script is:inline define:vars={{ userId, token }}>
+    const overlay = document.getElementById("quick-add-overlay");
+    const form = document.getElementById("quick-add-form");
+    const closeBtn = document.getElementById("close-quick-add");
+    const trigger = document.getElementById("nav-add-trigger");
+
+    function openModal() {
+        overlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeModal() {
+        overlay.classList.remove("active");
+        document.body.style.overflow = "";
+    }
+
+    trigger?.addEventListener("click", openModal);
+    closeBtn?.addEventListener("click", closeModal);
+    overlay?.addEventListener("click", (e) => {
+        if (e.target === overlay) closeModal();
+    });
+
+    form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("qa-submit");
+        btn.disabled = true;
+        btn.innerText = "GUARDANDO...";
+
+        const formData = new FormData(form);
+        const data = {
+            amount: parseFloat(formData.get("amount")),
+            description: formData.get("description"),
+            category: formData.get("category"),
+            userId: userId,
+            timestamp: Date.now(),
+        };
+
+        try {
+            const response = await fetch(
+                `${window.location.origin}/api/personal/expenses/${userId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-API-Key": "development-key", // We'll need to handle this correctly
+                    },
+                    body: JSON.stringify(data),
+                },
+            );
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert("Error al guardar el gasto");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error de conexión");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "GUARDAR GASTO";
+        }
+    });
+</script>

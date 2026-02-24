@@ -114,11 +114,30 @@ if (prevMonthTotal > 0) {
 	<div class="premium-dashboard">
 		<PageHeader username={user.name} />
 
-		<PortfolioSummary
-			amount={totalWealth}
-			label="MI RIQUEZA TOTAL"
-			trend={trend}
-		/>
+		<div class="wealth-toggle-container">
+			<div class="luxury-toggle" id="expense-toggle">
+				<button class="toggle-opt active" data-type="personal"
+					>Personales</button
+				>
+				<button class="toggle-opt" data-type="total">Totales</button>
+				<div class="toggle-slider"></div>
+			</div>
+		</div>
+
+		<div id="summary-personal">
+			<PortfolioSummary
+				amount={totalPersonalSpend}
+				label="MIS GASTOS"
+				trend={trend}
+			/>
+		</div>
+		<div id="summary-total" style="display: none;">
+			<PortfolioSummary
+				amount={totalWealth}
+				label="MIS GASTOS"
+				trend={trend}
+			/>
+		</div>
 
 		<!-- Action Grid -->
 		<div class="action-grid">
@@ -177,43 +196,6 @@ if (prevMonthTotal > 0) {
 				}
 			</div>
 		</section>
-
-		<!-- Activity / Insights -->
-		<section class="insights-section">
-			<div class="sec-header">
-				<h2>RESUMEN DE MERCADO</h2>
-				<a href="#" class="view-all-btn">VER TODO</a>
-			</div>
-
-			<div class="activity-chart">
-				<div class="chart-bars">
-					{
-						[40, 60, 50, 70, 90, 80, 75, 85].map((h, i) => (
-							<div
-								class={`bar ${i === 4 ? "highlight" : ""}`}
-								style={`height: ${h}%`}
-							/>
-						))
-					}
-				</div>
-			</div>
-
-			<div class="insights-list">
-				{
-					allExpenses
-						.slice(0, 5)
-						.map((exp) => (
-							<ExpenseItem
-								description={exp.description}
-								amount={exp.amount}
-								category={exp.category}
-								source={exp.source}
-								timestamp={exp.timestamp}
-							/>
-						))
-				}
-			</div>
-		</section>
 	</div>
 </Layout>
 
@@ -262,6 +244,58 @@ if (prevMonthTotal > 0) {
 		font-weight: 800;
 		color: var(--primary);
 		letter-spacing: 0.1em;
+	}
+
+	/* Wealth Toggle */
+	.wealth-toggle-container {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 1rem;
+	}
+
+	.luxury-toggle {
+		background: var(--nav-bg);
+		padding: 4px;
+		border-radius: 12px;
+		display: flex;
+		position: relative;
+		border: 1px solid var(--glass-border);
+		width: 200px;
+	}
+
+	.toggle-opt {
+		flex: 1;
+		background: transparent;
+		border: none;
+		color: var(--text-muted);
+		font-size: 0.7rem;
+		font-weight: 700;
+		padding: 8px 0;
+		cursor: pointer;
+		z-index: 2;
+		transition: color 0.3s;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.toggle-opt.active {
+		color: #000;
+	}
+
+	.toggle-slider {
+		position: absolute;
+		top: 4px;
+		left: 4px;
+		width: calc(50% - 4px);
+		height: calc(100% - 8px);
+		background: var(--primary-gradient);
+		border-radius: 10px;
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		z-index: 1;
+	}
+
+	.luxury-toggle.total-active .toggle-slider {
+		transform: translateX(100%);
 	}
 
 	/* Cards section */
@@ -314,3 +348,30 @@ if (prevMonthTotal > 0) {
 		flex-direction: column;
 	}
 </style>
+
+<script>
+	const toggle = document.getElementById("expense-toggle");
+	const personalSummary = document.getElementById("summary-personal");
+	const totalSummary = document.getElementById("summary-total");
+	const opts = toggle?.querySelectorAll(".toggle-opt");
+
+	opts?.forEach((opt) => {
+		opt.addEventListener("click", () => {
+			const type = opt.getAttribute("data-type");
+
+			// Update classes
+			opts.forEach((o) => o.classList.remove("active"));
+			opt.classList.add("active");
+
+			if (type === "total") {
+				toggle?.classList.add("total-active");
+				if (personalSummary) personalSummary.style.display = "none";
+				if (totalSummary) totalSummary.style.display = "block";
+			} else {
+				toggle?.classList.remove("total-active");
+				if (personalSummary) personalSummary.style.display = "block";
+				if (totalSummary) totalSummary.style.display = "none";
+			}
+		});
+	});
+</script>

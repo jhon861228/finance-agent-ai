@@ -77,6 +77,12 @@ if (Astro.request.method === "POST") {
 						path: "/",
 						maxAge: 60 * 60 * 24 * 7,
 					});
+					Astro.cookies.set("userId", result.user.userId, {
+						httpOnly: true,
+						secure: true,
+						path: "/",
+						maxAge: 60 * 60 * 24 * 7,
+					});
 					return Astro.redirect("/dashboard");
 				}
 			}
