@@ -18,6 +18,7 @@ import {
 	type Expense,
 	type Group,
 } from "../lib/db";
+import { undefined } from "astro:schema";
 
 if (!username || !token) {
 	return Astro.redirect("/");
@@ -100,7 +101,7 @@ const prevMonthTotal = allExpenses
 	})
 	.reduce((sum, e) => sum + e.amount, 0);
 
-let trend = null;
+let trend;
 if (prevMonthTotal > 0) {
 	const diff = ((curMonthTotal - prevMonthTotal) / prevMonthTotal) * 100;
 	const sign = diff >= 0 ? "+" : "";
