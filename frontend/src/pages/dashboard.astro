@@ -93,7 +93,7 @@ if (prevMonthTotal > 0) {
 	const sign = diff >= 0 ? "+" : "";
 	trend = `${sign}${diff.toFixed(1)}% vs last month`;
 } else if (allExpenses.length > 0 && curMonthTotal > 0) {
-	trend = "First month of activity";
+	trend = "Primer mes de actividad";
 }
 ---
 
@@ -109,25 +109,25 @@ if (prevMonthTotal > 0) {
 				<div class="action-btn-p">
 					<span>➤</span>
 				</div>
-				<span class="action-label">SEND</span>
+				<span class="action-label">ENVIAR</span>
 			</div>
 			<div class="action-item">
 				<div class="action-btn-p">
 					<span>💵</span>
 				</div>
-				<span class="action-label">PAY</span>
+				<span class="action-label">PAGAR</span>
 			</div>
 			<div class="action-item">
 				<div class="action-btn-p">
 					<span>📈</span>
 				</div>
-				<span class="action-label">INVEST</span>
+				<span class="action-label">INVERTIR</span>
 			</div>
 			<div class="action-item">
 				<div class="action-btn-p">
 					<span>⊕</span>
 				</div>
-				<span class="action-label">TOP UP</span>
+				<span class="action-label">RECARGAR</span>
 			</div>
 		</div>
 
@@ -140,8 +140,8 @@ if (prevMonthTotal > 0) {
 		<!-- Group Cards -->
 		<section class="cards-section">
 			<div class="sec-header">
-				<h2>YOUR GROUPS</h2>
-				<a href="/group/manage" class="manage-btn">MANAGE</a>
+				<h2>TUS GRUPOS</h2>
+				<a href="/group/manage" class="manage-btn">GESTIONAR</a>
 			</div>
 			<div class="cards-scroll">
 				{
@@ -153,15 +153,19 @@ if (prevMonthTotal > 0) {
 						/>
 					))
 				}
-				{groups.length === 0 && <p class="muted">No groups yet.</p>}
+				{
+					groups.length === 0 && (
+						<p class="muted">Aún no tienes grupos.</p>
+					)
+				}
 			</div>
 		</section>
 
 		<!-- Activity / Insights -->
 		<section class="insights-section">
 			<div class="sec-header">
-				<h2>MARKET INSIGHTS</h2>
-				<a href="#" class="view-all-btn">VIEW ALL</a>
+				<h2>RESUMEN DE MERCADO</h2>
+				<a href="#" class="view-all-btn">VER TODO</a>
 			</div>
 
 			<div class="activity-chart">
@@ -237,10 +241,10 @@ if (prevMonthTotal > 0) {
 	}
 
 	.action-label {
-		font-size: 0.6rem;
+		font-size: 0.65rem;
 		font-weight: 800;
-		color: var(--text-muted);
-		letter-spacing: 0.05em;
+		color: var(--primary);
+		letter-spacing: 0.1em;
 	}
 
 	/* Cards section */

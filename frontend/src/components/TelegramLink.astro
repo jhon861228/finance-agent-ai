@@ -53,8 +53,8 @@ const { linkCode, telegramId } = Astro.props;
 <style>
     .telegram-link-section .premium-card {
         padding: 1.5rem;
-        background: rgba(30, 215, 96, 0.05); /* Slight green tint */
-        border: 1px solid rgba(30, 215, 96, 0.2);
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
     }
 
     .text-center {
@@ -83,12 +83,12 @@ const { linkCode, telegramId } = Astro.props;
     }
 
     .telegram-btn {
-        background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+        background: var(--gold-gradient);
         border: none;
         padding: 12px 24px;
         border-radius: 12px;
-        color: white;
-        font-weight: 600;
+        color: #000;
+        font-weight: 700;
         letter-spacing: 1px;
         cursor: pointer;
         display: inline-flex;
@@ -96,13 +96,14 @@ const { linkCode, telegramId } = Astro.props;
         justify-content: center;
         gap: 8px;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+        box-shadow: 0 4px 15px rgba(235, 192, 63, 0.2);
         text-transform: uppercase;
         font-size: 0.9rem;
     }
 
     .telegram-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 136, 204, 0.6);
+        box-shadow: 0 6px 20px rgba(235, 192, 63, 0.4);
+        filter: brightness(1.1);
     }
 </style>

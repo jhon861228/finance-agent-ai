@@ -60,10 +60,10 @@ if (Astro.request.method === "POST") {
 
 			if (!response.ok) {
 				console.error("[Auth Error] Authentication failed:", result);
-				error = result.error || "Authentication failed.";
+				error = result.error || "Error de autenticación.";
 			} else {
 				if (action === "register") {
-					success = "Registration successful! Please log in.";
+					success = "¡Registro exitoso! Por favor inicia sesión.";
 				} else {
 					Astro.cookies.set("token", result.token, {
 						httpOnly: true,
@@ -86,12 +86,12 @@ if (Astro.request.method === "POST") {
 			"[Auth Exception] Unexpected error during form submission:",
 			e,
 		);
-		error = "An unexpected error occurred.";
+		error = "Ha ocurrido un error inesperado.";
 	}
 }
 ---
 
-<Layout title="Welcome - Login">
+<Layout title="Bienvenido - Login">
 	<div class="login-container">
 		<header>
 			<div class="logo">
@@ -108,12 +108,12 @@ if (Astro.request.method === "POST") {
 				</svg>
 				<h1 class="title-gradient">Antigravity Finance</h1>
 			</div>
-			<p>Your premium personal finance assistant</p>
+			<p>Tu asistente premium de finanzas personales</p>
 		</header>
 
 		<section class="glass-panel login-box">
-			<h2>Access the Dashboard</h2>
-			<p>Login or create an account to view your expenses.</p>
+			<h2>Accede al Dashboard</h2>
+			<p>Inicia sesión o crea una cuenta para ver tus gastos.</p>
 
 			{error && <div class="error-msg">{error}</div>}
 			{success && <div class="success-msg">{success}</div>}
@@ -123,7 +123,7 @@ if (Astro.request.method === "POST") {
 					<input
 						type="text"
 						name="username"
-						placeholder="Username (e.g. Pepe)"
+						placeholder="Usuario (ej. Pepe)"
 						required
 						autocomplete="username"
 					/>
@@ -132,7 +132,7 @@ if (Astro.request.method === "POST") {
 					<input
 						type="password"
 						name="password"
-						placeholder="Password"
+						placeholder="Contraseña"
 						required
 						autocomplete="current-password"
 					/>
@@ -148,14 +148,14 @@ if (Astro.request.method === "POST") {
 						type="submit"
 						name="action"
 						value="register"
-						class="glow-btn outline">Register</button
+						class="glow-btn outline">Registro</button
 					>
 				</div>
 			</form>
 		</section>
 
 		<footer>
-			<p>&copy; 2026 Antigravity Finance. Powered by AI.</p>
+			<p>&copy; 2026 Antigravity Finance. Potenciado por IA.</p>
 		</footer>
 	</div>
 </Layout>

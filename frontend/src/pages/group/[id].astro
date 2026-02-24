@@ -54,21 +54,21 @@ if (Astro.request.method === "POST") {
                         targetUser.userId,
                         token,
                     );
-                    success = `Added ${targetUsername} successfully!`;
+                    success = `¡Se ha añadido a ${targetUsername} con éxito!`;
                     // Refresh group data
                     return Astro.redirect(`/group/${id}?success=MemberAdded`);
                 } else {
-                    error = `User @${targetUsername} not found.`;
+                    error = `Usuario @${targetUsername} no encontrado.`;
                 }
             } catch (e: any) {
-                error = e.message || "Failed to add member.";
+                error = e.message || "Error al añadir miembro.";
             }
         }
     }
 }
 
 const flashSuccess = Astro.url.searchParams.get("success") === "MemberAdded";
-if (flashSuccess && !success) success = "Member added successfully!";
+if (flashSuccess && !success) success = "¡Miembro añadido con éxito!";
 
 // Use projected stats
 const totalSpent = group.totalSpent || 0;
@@ -103,17 +103,17 @@ group.members.forEach((m) => {
         <!-- Stats Grid -->
         <section class="group-stats-luxury">
             <div class="stat-luxury-card">
-                <span class="stat-l-label">TOTAL SPENT</span>
+                <span class="stat-l-label">TOTAL GASTADO</span>
                 <span class="stat-l-val gold-text"
                     >${totalSpent.toFixed(2)}</span
                 >
             </div>
             <div class="stat-luxury-card">
-                <span class="stat-l-label">YOUR SHARE</span>
+                <span class="stat-l-label">TU CUOTA</span>
                 <span class="stat-l-val">${perPersonShare.toFixed(2)}</span>
             </div>
             <div class="stat-luxury-card">
-                <span class="stat-l-label">MEMBERS</span>
+                <span class="stat-l-label">MIEMBROS</span>
                 <span class="stat-l-val">{group.members.length}</span>
             </div>
         </section>
@@ -121,9 +121,9 @@ group.members.forEach((m) => {
         <!-- Settlements (Liquidations) -->
         <section class="settlements-luxury">
             <div class="sec-header">
-                <h2>LIQUIDATIONS</h2>
+                <h2>LIQUIDACIONES</h2>
                 <span class="status-pill settled"
-                    >{transactions.length === 0 ? "SETTLED" : "PENDING"}</span
+                    >{transactions.length === 0 ? "SALDADO" : "PENDIENTE"}</span
                 >
             </div>
             <div class="settlement-cards">
@@ -131,7 +131,9 @@ group.members.forEach((m) => {
                     transactions.length === 0 ? (
                         <div class="premium-card empty-settlement">
                             <span class="empty-icon">🥂</span>
-                            <p>All accounts are perfectly settled.</p>
+                            <p>
+                                Todas las cuentas están perfectamente saldadas.
+                            </p>
                         </div>
                     ) : (
                         transactions.map((t) => (
@@ -158,12 +160,14 @@ group.members.forEach((m) => {
         <!-- Expense History -->
         <section class="group-expenses-luxury">
             <div class="sec-header">
-                <h2>TRANSACTION HISTORY</h2>
+                <h2>HISTORIAL DE TRANSACCIONES</h2>
             </div>
             <div class="luxury-expense-list">
                 {
                     group.expenses.length === 0 ? (
-                        <p class="muted">No transactions recorded yet.</p>
+                        <p class="muted">
+                            No hay transacciones registradas aún.
+                        </p>
                     ) : (
                         group.expenses
                             .slice()
@@ -189,15 +193,16 @@ group.members.forEach((m) => {
         <!-- Member Balances -->
         <section class="member-balances-luxury">
             <div class="sec-header">
-                <h2>MEMBER STATUS</h2>
+                <h2>ESTADO DE MIEMBROS</h2>
                 <div class="add-member-trigger">
                     <form method="POST" class="inline-add-member">
                         <input type="hidden" name="action" value="add-member" />
                         <input
                             type="text"
                             name="targetUsername"
-                            placeholder="Add by @username"
+                            placeholder="Añadir por @usuario"
                             required
+                            autocomplete="off"
                         />
                         <button type="submit" class="mini-glow-btn">+</button>
                     </form>

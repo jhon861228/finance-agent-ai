@@ -53,45 +53,58 @@ if (Astro.request.method === "POST") {
                         targetUser.userId,
                         token,
                     );
-                    success = `Added ${memberUser} to group!`;
+                    success = `¡${memberUser} añadido al grupo!`;
                 } else {
                     // If user not found in DB, we can still try to add them by name (legacy support)
                     await addMember(groupId, memberUser, undefined, token);
-                    success = `Added ${memberUser} (as new profile) to group!`;
+                    success = `¡${memberUser} añadido al grupo (como nuevo perfil)!`;
                 }
             }
         }
     } catch (e: any) {
-        error = e.message || "Operation failed.";
+        error = e.message || "Operación fallida.";
     }
 }
 
 const groups: Group[] = await getUserGroups(me.userId, token);
 ---
 
-<Layout title="Manage Groups">
+<Layout title="Administrar Grupos">
     <div class="manage-groups-container">
-        <PageHeader username={me.name} title="Groups" showBack={true} />
+        <PageHeader username={me.name} title="Grupos" showBack={true} />
 
         {error && <div class="error-msg">{error}</div>}
         {success && <div class="success-msg">{success}</div>}
 
-        <section class="glass-panel group-form-section">
-            <h3>Create New Group</h3>
-            <form method="POST" class="horizontal-form">
-                <input type="hidden" name="action" value="create-group" />
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Group Name (e.g. Trip to Paris)"
-                    required
-                />
-                <button type="submit" class="glow-btn">Create</button>
-            </form>
+        <section class="manage-section">
+            <div class="sec-header">
+                <h2>CREAR NUEVO GRUPO</h2>
+            </div>
+            <div class="glass-panel create-box">
+                <p class="muted mb-4">
+                    Inicia un nuevo fondo compartido para gastos en común.
+                </p>
+                <form method="POST" class="horizontal-form">
+                    <input type="hidden" name="action" value="create-group" />
+                    <div class="input-group-luxury">
+                        <label for="name">NOMBRE DEL GRUPO</label>
+                        <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            placeholder="Ej. Viaje a Japón, Alquiler..."
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="glow-btn w-full">
+                        CREAR GRUPO
+                    </button>
+                </form>
+            </div>
         </section>
 
         <section class="groups-list-section">
-            <h2 class="sec-title">YOUR GROUPS</h2>
+            <h2 class="sec-title">TUS GRUPOS</h2>
             <div class="groups-grid">
                 {
                     groups.map((group) => (
@@ -99,7 +112,7 @@ const groups: Group[] = await getUserGroups(me.userId, token);
                             <div class="group-info">
                                 <h4>{group.name}</h4>
                                 <p class="muted">
-                                    {group.members.length} members
+                                    {group.members.length} miembros
                                 </p>
                             </div>
 
@@ -118,14 +131,14 @@ const groups: Group[] = await getUserGroups(me.userId, token);
                                     <input
                                         type="text"
                                         name="memberUsername"
-                                        placeholder="User Name"
+                                        placeholder="Nombre de Usuario"
                                         required
                                     />
                                     <button
                                         type="submit"
                                         class="glow-btn small"
                                     >
-                                        Add
+                                        Añadir
                                     </button>
                                 </form>
                             </div>
