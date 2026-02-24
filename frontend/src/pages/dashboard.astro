@@ -35,8 +35,21 @@ const personalExpenses: Expense[] = await getPersonalExpenses(
 	user.userId,
 	token,
 );
-const totalPersonalSpend = user.totalSpent || 0;
 const groups: Group[] = await getUserGroups(user.userId, token);
+
+const totalPersonalSpend = user.totalSpent || 0;
+
+// Calculate total wealth: personal spent + user contributions to all groups
+const totalGroupContributions = groups.reduce((sum, g) => {
+	return (
+		sum +
+		g.expenses
+			.filter((e) => e.payerId === user.userId)
+			.reduce((s, e) => s + e.amount, 0)
+	);
+}, 0);
+
+const totalWealth = totalPersonalSpend + totalGroupContributions;
 
 let linkCode = null;
 if (Astro.request.method === "POST") {
@@ -101,7 +114,11 @@ if (prevMonthTotal > 0) {
 	<div class="premium-dashboard">
 		<PageHeader username={user.name} />
 
-		<PortfolioSummary amount={totalPersonalSpend} trend={trend} />
+		<PortfolioSummary
+			amount={totalWealth}
+			label="MI RIQUEZA TOTAL"
+			trend={trend}
+		/>
 
 		<!-- Action Grid -->
 		<div class="action-grid">
