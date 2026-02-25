@@ -1,6 +1,9 @@
-import { DynamoDBClient, UpdateItemCommand, PutItemCommand, DeleteItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { DomainEvent, EventType, ExpenseAddedEvent, GroupCreatedEvent, MemberAddedEvent, SettlementRecordedEvent, PersonalExpenseRecordedEvent, UserCreatedEvent, PersonalExpenseDeletedEvent, PersonalAccountClearedEvent, TelegramLinkedEvent } from '../events/Types';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DomainEvent } from '../events/Types';
+import { IEventHandler } from './projections/IEventHandler';
+import { GroupProjectionHandler } from './projections/GroupProjectionHandler';
+import { PersonalProjectionHandler } from './projections/PersonalProjectionHandler';
+import { UserProjectionHandler } from './projections/UserProjectionHandler';
 
 const client = new DynamoDBClient({
     region: process.env.AWS_REGION || 'us-east-1',
@@ -8,387 +11,37 @@ const client = new DynamoDBClient({
     credentials: process.env.DYNAMODB_ENDPOINT ? {
         accessKeyId: 'fake',
         secretAccessKey: 'fake'
-    } : undefined
+    } : undefined,
 });
 const TABLE_NAME = process.env.READ_MODELS_TABLE || 'finance-agent-read-models';
 
 export class Projector {
-    async handle(event: DomainEvent) {
-        console.log(`[Projector] Start handling event: ${event.eventId} (Type: ${event.type}, AggregateId: ${event.aggregateId})`);
+    private readonly handlers: IEventHandler[];
+
+    constructor() {
+        this.handlers = [
+            new GroupProjectionHandler(client, TABLE_NAME),
+            new PersonalProjectionHandler(client, TABLE_NAME),
+            new UserProjectionHandler(client, TABLE_NAME),
+        ];
+    }
+
+    async handle(event: DomainEvent): Promise<void> {
+        console.log(`[Projector] Handling event: ${event.eventId} (Type: ${event.type}, AggregateId: ${event.aggregateId})`);
+
+        const handler = this.handlers.find(h => h.handles.includes(event.type));
+
+        if (!handler) {
+            console.log(`[Projector] No handler registered for type: ${event.type}`);
+            return;
+        }
+
         try {
-            switch (event.type) {
-                case EventType.GROUP_CREATED:
-                    await this.projectGroupCreated(event as GroupCreatedEvent);
-                    break;
-                case EventType.MEMBER_ADDED:
-                    await this.projectMemberAdded(event as MemberAddedEvent);
-                    break;
-                case EventType.EXPENSE_ADDED:
-                    await this.projectExpenseAdded(event as ExpenseAddedEvent);
-                    break;
-                case EventType.PERSONAL_EXPENSE_RECORDED:
-                    await this.projectPersonalExpenseRecorded(event as PersonalExpenseRecordedEvent);
-                    break;
-                case EventType.USER_CREATED:
-                    await this.projectUserCreated(event as UserCreatedEvent);
-                    break;
-                case EventType.PERSONAL_EXPENSE_DELETED:
-                    await this.projectPersonalExpenseDeleted(event as PersonalExpenseDeletedEvent);
-                    break;
-                case EventType.PERSONAL_ACCOUNT_CLEARED:
-                    await this.projectPersonalAccountCleared(event as PersonalAccountClearedEvent);
-                    break;
-                case EventType.TELEGRAM_LINKED:
-                    await this.projectTelegramLinked(event as TelegramLinkedEvent);
-                    break;
-                default:
-                    console.log(`[Projector] No projection logic for type: ${event.type}`);
-            }
+            await handler.handle(event);
             console.log(`[Projector] Finished processing event: ${event.eventId}`);
         } catch (error) {
             console.error(`[Projector] CRITICAL ERROR processing event ${event.eventId}:`, error);
             throw error;
         }
-    }
-
-    private async projectGroupCreated(event: GroupCreatedEvent) {
-        const params = {
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: 'METADATA' }),
-            UpdateExpression: 'SET #name = :name, createdBy = :createdBy, createdAt = :createdAt, totalSpent = :zero, memberCount = :zero',
-            ExpressionAttributeNames: { '#name': 'name' },
-            ExpressionAttributeValues: marshall({
-                ':name': event.payload.name,
-                ':createdBy': event.payload.createdBy,
-                ':createdAt': event.timestamp,
-                ':zero': 0
-            }),
-        };
-        await client.send(new UpdateItemCommand(params));
-    }
-
-    private async projectMemberAdded(event: MemberAddedEvent) {
-        // 1. Add Member Item
-        const params = {
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: `MEMBER#${event.payload.userId}` }),
-            UpdateExpression: 'SET #name = :name, telegramId = :tid',
-            ExpressionAttributeNames: { '#name': 'name' },
-            ExpressionAttributeValues: marshall({
-                ':name': event.payload.name,
-                ':tid': event.payload.telegramId || null,
-            }),
-        };
-        await client.send(new UpdateItemCommand(params));
-
-        // 2. Increment Member Count in Metadata
-        await client.send(new UpdateItemCommand({
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: 'METADATA' }),
-            UpdateExpression: 'ADD memberCount :one',
-            ExpressionAttributeValues: marshall({ ':one': 1 })
-        }));
-
-        // 3. Recalculate settlements since member list changed
-        await this.recalculateSettlements(event.aggregateId);
-    }
-
-    private async projectExpenseAdded(event: ExpenseAddedEvent) {
-        const { aggregateId: groupId, eventId, payload } = event;
-        const { expenseId, amount, payerId, description } = payload;
-
-        console.log(`[Projector:GroupExpense] Processing ${amount} for group ${groupId}. EventId: ${eventId}`);
-
-        // 1. Store the expense item
-        console.log(`[Projector:GroupExpense] Saving expense item: ${expenseId}`);
-        const expenseParams = {
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${groupId}`, sk: `EXPENSE#${expenseId}` }),
-            UpdateExpression: 'SET amount = :amount, description = :desc, payerId = :payer, #ts = :ts',
-            ExpressionAttributeNames: { '#ts': 'timestamp' },
-            ExpressionAttributeValues: marshall({
-                ':amount': amount,
-                ':desc': description,
-                ':payer': payerId,
-                ':ts': event.timestamp
-            })
-        };
-        await client.send(new UpdateItemCommand(expenseParams));
-
-        // 2. Update Group Metadata Total (Idempotent)
-        console.log(`[Projector:GroupExpense] Updating METADATA totals (Gated by lastEventId: ${eventId})`);
-        try {
-            const result = await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `GROUP#${groupId}`, sk: 'METADATA' }),
-                UpdateExpression: 'ADD totalSpent :amount SET lastEventId = :eid',
-                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                ExpressionAttributeValues: marshall({
-                    ':amount': amount,
-                    ':eid': eventId
-                }),
-                ReturnValues: 'ALL_NEW'
-            }));
-            const updatedMetadata = unmarshall(result.Attributes || {});
-            console.log(`[Projector:GroupExpense] Total update successful. New Group Total: ${updatedMetadata.totalSpent}`);
-        } catch (error: any) {
-            if (error.name === 'ConditionalCheckFailedException') {
-                console.warn(`[Projector:GroupExpense] IDEMPOTENCY TRIGGERED: Event ${eventId} already processed for group ${groupId}. Skip total update.`);
-                return;
-            }
-            throw error;
-        }
-
-        // 3. Update Payer Balance
-        console.log(`[Projector:GroupExpense] Updating balance for payer: ${payerId}`);
-        await client.send(new UpdateItemCommand({
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${groupId}`, sk: `BALANCE#${payerId}` }),
-            UpdateExpression: 'ADD paidAmount :amount',
-            ExpressionAttributeValues: marshall({ ':amount': amount })
-        }));
-
-        // 4. Recalculate settlements
-        await this.recalculateSettlements(groupId);
-    }
-
-    private async recalculateSettlements(groupId: string) {
-        // Fetch all items for this group to get members and balances
-        const { Items } = await client.send(new QueryCommand({
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'pk = :pk',
-            ExpressionAttributeValues: marshall({ ':pk': `GROUP#${groupId}` })
-        }));
-
-        if (!Items) return;
-
-        const docs = Items.map(i => unmarshall(i));
-        const metadata = docs.find(d => d.sk === 'METADATA');
-        const members = docs.filter(d => d.sk.startsWith('MEMBER#'));
-        const balances = docs.filter(d => d.sk.startsWith('BALANCE#'));
-
-        if (!metadata || members.length === 0) return;
-
-        const totalSpent = metadata.totalSpent || 0;
-        const perPersonShare = totalSpent / members.length;
-
-        const netBalances: Record<string, number> = {};
-        members.forEach(m => {
-            const userId = m.sk.replace('MEMBER#', '');
-            const balanceDoc = balances.find(b => b.sk === `BALANCE#${userId}`);
-            const paid = balanceDoc ? (balanceDoc.paidAmount || 0) : 0;
-            netBalances[userId] = paid - perPersonShare;
-        });
-
-        // Use DebtCalculator to simplify
-        const { DebtCalculator } = await import('./DebtCalculator');
-        const transactions = DebtCalculator.simplifyDebts(netBalances);
-
-        // Store projected settlements
-        await client.send(new UpdateItemCommand({
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `GROUP#${groupId}`, sk: 'SETTLEMENTS' }),
-            UpdateExpression: 'SET transactions = :t, lastUpdate = :ts',
-            ExpressionAttributeValues: marshall({
-                ':t': transactions,
-                ':ts': Date.now()
-            })
-        }));
-    }
-
-    private async projectSettlementRecorded(event: SettlementRecordedEvent) {
-        // ... (existing logic to update BALANCE items)
-        for (const transfer of event.payload.transfers) {
-            await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: `BALANCE#${transfer.from}` }),
-                UpdateExpression: 'ADD paidAmount :amount',
-                ExpressionAttributeValues: marshall({ ':amount': transfer.amount })
-            }));
-
-            await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `GROUP#${event.aggregateId}`, sk: `BALANCE#${transfer.to}` }),
-                UpdateExpression: 'ADD paidAmount :amount',
-                ExpressionAttributeValues: marshall({ ':amount': -transfer.amount })
-            }));
-        }
-
-        // Recalculate after manual settlement
-        await this.recalculateSettlements(event.aggregateId);
-    }
-
-    private async projectPersonalExpenseRecorded(event: PersonalExpenseRecordedEvent) {
-        const { aggregateId: userId, eventId, payload } = event;
-        const { expenseId, amount, category, description } = payload;
-
-        console.log(`[Projector:Personal] Recording ${amount} for user ${userId}. EventId: ${eventId}`);
-
-        const params = {
-            TableName: TABLE_NAME,
-            Item: marshall({
-                pk: `USER#${userId}`,
-                sk: `EXPENSE#${expenseId}`,
-                amount: amount,
-                category: category,
-                description: description,
-                timestamp: event.timestamp
-            })
-        };
-        await client.send(new PutItemCommand(params));
-
-        // Update User Metadata Total (Idempotent)
-        console.log(`[Projector:Personal] Updating USER METADATA total (Gated by lastEventId: ${eventId})`);
-        try {
-            const result = await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `USER#${userId}`, sk: 'METADATA' }),
-                UpdateExpression: 'ADD totalSpent :amount SET lastEventId = :eid',
-                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                ExpressionAttributeValues: marshall({
-                    ':amount': amount,
-                    ':eid': eventId
-                }),
-                ReturnValues: 'ALL_NEW'
-            }));
-            const updatedMetadata = unmarshall(result.Attributes || {});
-            console.log(`[Projector:Personal] Total update successful. New User Total: ${updatedMetadata.totalSpent}`);
-        } catch (error: any) {
-            if (error.name === 'ConditionalCheckFailedException') {
-                console.warn(`[Projector:Personal] IDEMPOTENCY TRIGGERED: Event ${eventId} already processed for user ${userId}. Skip total update.`);
-                return;
-            }
-            throw error;
-        }
-    }
-
-    private async projectPersonalExpenseDeleted(event: PersonalExpenseDeletedEvent) {
-        // Find exact SK first to handle both formats
-        const queryParams = {
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-            ExpressionAttributeValues: {
-                ':pk': { S: `USER#${event.aggregateId}` },
-                ':prefix': { S: 'EXPENSE#' }
-            }
-        };
-
-        const { Items } = await client.send(new QueryCommand(queryParams));
-        if (!Items) return;
-
-        const targetItem = Items.find(item => {
-            const doc = unmarshall(item);
-            return (doc.sk as string).includes(event.payload.expenseId);
-        });
-
-        if (targetItem) {
-            const doc = unmarshall(targetItem);
-            const sk = doc.sk;
-            const amount = doc.amount || 0;
-
-            // 1. Delete the item
-            await client.send(new DeleteItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `USER#${event.aggregateId}`, sk })
-            }));
-
-            // 2. Subtract from total (Idempotent)
-            try {
-                await client.send(new UpdateItemCommand({
-                    TableName: TABLE_NAME,
-                    Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-                    UpdateExpression: 'ADD totalSpent :minusAmount SET lastEventId = :eid',
-                    ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                    ExpressionAttributeValues: marshall({
-                        ':minusAmount': -amount,
-                        ':eid': event.eventId
-                    })
-                }));
-            } catch (error: any) {
-                if (error.name === 'ConditionalCheckFailedException') {
-                    console.log(`[Projector] Event ${event.eventId} already processed for deletion. Skipping total adjustment.`);
-                    return;
-                }
-                throw error;
-            }
-        }
-    }
-
-    private async projectPersonalAccountCleared(event: PersonalAccountClearedEvent) {
-        const queryParams = {
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-            ExpressionAttributeValues: {
-                ':pk': { S: `USER#${event.aggregateId}` },
-                ':prefix': { S: 'EXPENSE#' }
-            }
-        };
-
-        const { Items } = await client.send(new QueryCommand(queryParams));
-        if (!Items) return;
-
-        for (const item of Items) {
-            const sk = unmarshall(item).sk;
-            await client.send(new DeleteItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `USER#${event.aggregateId}`, sk })
-            }));
-        }
-
-        // 2. Reset total
-        try {
-            await client.send(new UpdateItemCommand({
-                TableName: TABLE_NAME,
-                Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-                UpdateExpression: 'SET totalSpent = :zero, lastEventId = :eid',
-                ConditionExpression: 'attribute_not_exists(lastEventId) OR lastEventId <> :eid',
-                ExpressionAttributeValues: marshall({
-                    ':zero': 0,
-                    ':eid': event.eventId
-                })
-            }));
-        } catch (error: any) {
-            if (error.name === 'ConditionalCheckFailedException') {
-                return;
-            }
-            throw error;
-        }
-    }
-
-    private async projectUserCreated(event: UserCreatedEvent) {
-        let updateExpression = 'SET #name = :name, telegramId = :tid, createdAt = :ts, totalSpent = :zero';
-        const expressionAttributeNames: any = { '#name': 'name' };
-        const expressionAttributeValues: any = {
-            ':name': event.payload.name,
-            ':tid': event.payload.telegramId || null,
-            ':ts': event.timestamp,
-            ':zero': 0
-        };
-
-        if (event.payload.passwordHash) {
-            updateExpression += ', passwordHash = :pwd';
-            expressionAttributeValues[':pwd'] = event.payload.passwordHash;
-        }
-
-        const params = {
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-            UpdateExpression: updateExpression,
-            ExpressionAttributeNames: expressionAttributeNames,
-            ExpressionAttributeValues: marshall(expressionAttributeValues)
-        };
-        await client.send(new UpdateItemCommand(params));
-    }
-
-    private async projectTelegramLinked(event: TelegramLinkedEvent) {
-        const params = {
-            TableName: TABLE_NAME,
-            Key: marshall({ pk: `USER#${event.aggregateId}`, sk: 'METADATA' }),
-            UpdateExpression: 'SET telegramId = :tid',
-            ExpressionAttributeValues: marshall({
-                ':tid': event.payload.telegramId
-            })
-        };
-        await client.send(new UpdateItemCommand(params));
     }
 }
