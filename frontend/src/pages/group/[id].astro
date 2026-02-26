@@ -261,8 +261,8 @@ group.expenses.forEach((exp) => {
                 if (btn && result) {
                     btn.onclick = () => {
                         // Mostrar las liquidaciones
-                        const txs = {JSON.stringify(transactions)};
-                        const idToName = {JSON.stringify(idToName)};
+                        const txs = JSON.parse('{JSON.stringify(transactions)}');
+                        const idToName = JSON.parse('{JSON.stringify(idToName)}');
                         let html = "<h3>Liquidaciones:</h3>";
                         if (txs.length === 0) {
                             html += "<p>Todo está saldado.</p>";
