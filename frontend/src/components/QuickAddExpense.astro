@@ -291,10 +291,11 @@ const { userId, token } = Astro.props;
 </style>
 
 <script is:inline define:vars={{ userId, token }}>
+document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById("quick-add-overlay");
     const form = document.getElementById("quick-add-form");
     const closeBtn = document.getElementById("close-quick-add");
-    const trigger = document.getElementById("nav-add-trigger");
+    let trigger = document.getElementById("nav-add-trigger");
 
     function openModal() {
         if (!overlay) return;
@@ -308,9 +309,14 @@ const { userId, token } = Astro.props;
         document.body.style.overflow = "";
     }
 
-    trigger?.addEventListener("click", openModal);
-    closeBtn?.addEventListener("click", closeModal);
-    overlay?.addEventListener("click", (e) => {
+    // Fallback: buscar el trigger por clase si no existe por id
+    if (!trigger) {
+        trigger = document.querySelector(".nav-add-trigger");
+    }
+
+    if (trigger) trigger.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (overlay) overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeModal();
     });
 
@@ -319,46 +325,49 @@ const { userId, token } = Astro.props;
         if (e.key === "Escape") closeModal();
     });
 
-    form?.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("qa-submit");
-        btn.disabled = true;
-        btn.innerText = "GUARDANDO...";
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("qa-submit");
+            btn.disabled = true;
+            btn.innerText = "GUARDANDO...";
 
-        const formData = new FormData(form);
-        const data = {
-            amount: parseFloat(formData.get("amount")),
-            description: formData.get("description"),
-            category: formData.get("category"),
-            userId: userId,
-            timestamp: Date.now(),
-        };
+            const formData = new FormData(form);
+            const data = {
+                amount: parseFloat(formData.get("amount")),
+                description: formData.get("description"),
+                category: formData.get("category"),
+                userId: userId,
+                timestamp: Date.now(),
+            };
 
-        try {
-            const response = await fetch(
-                `${window.location.origin}/api/personal/expenses/${userId}`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-API-Key": "development-key",
+            try {
+                const response = await fetch(
+                    `${window.location.origin}/api/personal/expenses/${userId}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-API-Key": "development-key",
+                        },
+                        body: JSON.stringify(data),
                     },
-                    body: JSON.stringify(data),
-                },
-            );
+                );
 
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                alert("Error al guardar el gasto");
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert("Error al guardar el gasto");
+                    btn.disabled = false;
+                    btn.innerText = "GUARDAR GASTO";
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
                 btn.disabled = false;
                 btn.innerText = "GUARDAR GASTO";
             }
-        } catch (err) {
-            console.error(err);
-            alert("Error de conexión");
-            btn.disabled = false;
-            btn.innerText = "GUARDAR GASTO";
-        }
-    });
+        });
+    }
+});
 </script>

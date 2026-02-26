@@ -15,6 +15,7 @@ import {
     type User,
 } from "../../lib/db";
 import { simplifyDebts } from "../../lib/debt";
+import { formatAmount } from "../../lib/format";
 
 const { id } = Astro.params;
 
@@ -71,9 +72,10 @@ const flashSuccess = Astro.url.searchParams.get("success") === "MemberAdded";
 if (flashSuccess && !success) success = "¡Miembro añadido con éxito!";
 
 // Use projected stats
-const totalSpent = typeof group.totalSpent === 'number'
-    ? group.totalSpent
-    : (group.balances || []).reduce((s, b) => s + (b.paidAmount || 0), 0);
+const totalSpent =
+    typeof group.totalSpent === "number"
+        ? group.totalSpent
+        : (group.balances || []).reduce((s, b) => s + (b.paidAmount || 0), 0);
 const memberCount = group.memberCount || group.members.length || 1;
 const perPersonShare = memberCount > 0 ? totalSpent / memberCount : 0;
 
@@ -169,6 +171,11 @@ group.expenses.forEach((exp) => {
                     )
                 }
             </div>
+            <button
+                id="settle-btn"
+                class="mini-glow-btn"
+                style="margin-left:1rem;">Saldar cuentas</button
+            >
         </section>
 
         <!-- Expense History -->
@@ -221,7 +228,6 @@ group.expenses.forEach((exp) => {
                         <button type="submit" class="mini-glow-btn">+</button>
                     </form>
                 </div>
-                <button id="settle-btn" class="mini-glow-btn" style="margin-left:1rem;">Saldar cuentas</button>
             </div>
             <div class="balances-grid">
                 {
@@ -236,13 +242,11 @@ group.expenses.forEach((exp) => {
                                     </div>
                                     <span>{m.name}</span>
                                 </div>
-                                <span class={`bal-val ${bal >= 0 ? "positive" : "negative"}`}>
-                                    {bal >= 0
-                                        ? `+ $${bal.toFixed(2)}`
-                                        : `- $${Math.abs(bal).toFixed(2)}`}
-                                </span>
-                                <span class="bal-val" style="color:#bfa14a;margin-left:1rem;">
-                                    Gastó: ${spent.toFixed(2)}
+                                <span
+                                    class="bal-val"
+                                    style="color:#bfa14a;margin-left:1rem;"
+                                >
+                                    Gastó: ${formatAmount(spent)}
                                 </span>
                             </div>
                         );
@@ -253,31 +257,35 @@ group.expenses.forEach((exp) => {
         </section>
 
         <script>
-        // Mostrar liquidaciones al pulsar el botón
-        if (typeof window !== "undefined") {
-            document.addEventListener("DOMContentLoaded", () => {
-                const btn = document.getElementById("settle-btn");
-                const result = document.getElementById("settle-result");
-                if (btn && result) {
-                    btn.onclick = () => {
-                        // Mostrar las liquidaciones
-                        const txs = JSON.parse('{JSON.stringify(transactions)}');
-                        const idToName = JSON.parse('{JSON.stringify(idToName)}');
-                        let html = "<h3>Liquidaciones:</h3>";
-                        if (txs.length === 0) {
-                            html += "<p>Todo está saldado.</p>";
-                        } else {
-                            html += "<ul style='margin-left:1rem;'>";
-                            txs.forEach(t => {
-                                html += `<li><b>${idToName[t.from] || t.from}</b> paga <b>$${t.amount.toFixed(2)}</b> a <b>${idToName[t.to] || t.to}</b></li>`;
-                            });
-                            html += "</ul>";
-                        }
-                        result.innerHTML = html;
-                    };
-                }
-            });
-        }
+            // Mostrar liquidaciones al pulsar el botón
+            if (typeof window !== "undefined") {
+                document.addEventListener("DOMContentLoaded", () => {
+                    const btn = document.getElementById("settle-btn");
+                    const result = document.getElementById("settle-result");
+                    if (btn && result) {
+                        btn.onclick = () => {
+                            // Mostrar las liquidaciones
+                            const txs = JSON.parse(
+                                "{JSON.stringify(transactions)}",
+                            );
+                            const idToName = JSON.parse(
+                                "{JSON.stringify(idToName)}",
+                            );
+                            let html = "<h3>Liquidaciones:</h3>";
+                            if (txs.length === 0) {
+                                html += "<p>Todo está saldado.</p>";
+                            } else {
+                                html += "<ul style='margin-left:1rem;'>";
+                                txs.forEach((t: any) => {
+                                    html += `<li><b>${idToName[t.from] || t.from}</b> paga <b>$${t.amount.toFixed(2)}</b> a <b>${idToName[t.to] || t.to}</b></li>`;
+                                });
+                                html += "</ul>";
+                            }
+                            result.innerHTML = html;
+                        };
+                    }
+                });
+            }
         </script>
     </div>
 </Layout>
