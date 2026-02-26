@@ -71,8 +71,11 @@ const flashSuccess = Astro.url.searchParams.get("success") === "MemberAdded";
 if (flashSuccess && !success) success = "¡Miembro añadido con éxito!";
 
 // Use projected stats
-const totalSpent = group.totalSpent || 0;
-const perPersonShare = totalSpent / (group.members.length || 1);
+const totalSpent = typeof group.totalSpent === 'number'
+    ? group.totalSpent
+    : (group.balances || []).reduce((s, b) => s + (b.paidAmount || 0), 0);
+const memberCount = group.memberCount || group.members.length || 1;
+const perPersonShare = memberCount > 0 ? totalSpent / memberCount : 0;
 
 const memberBalances: Record<string, number> = {};
 group.balances.forEach((b) => {
