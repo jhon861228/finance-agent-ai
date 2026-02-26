@@ -241,7 +241,8 @@ if (prevMonthTotal > 0) {
 	}
 
 	.toggle-opt.active {
-		color: #000;
+		color: #fff;
+		font-weight: 800;
 	}
 
 	.toggle-slider {
@@ -250,10 +251,16 @@ if (prevMonthTotal > 0) {
 		left: 4px;
 		width: calc(50% - 4px);
 		height: calc(100% - 8px);
-		background: var(--primary-gradient);
+		background: linear-gradient(135deg, #22c55e, #16a34a);
 		border-radius: 10px;
 		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		z-index: 1;
+		box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+	}
+
+	/* Light mode: active text stays white over green */
+	:global([data-theme="light"]) .toggle-opt.active {
+		color: #fff;
 	}
 
 	.luxury-toggle.total-active .toggle-slider {
