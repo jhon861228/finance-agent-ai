@@ -89,6 +89,17 @@ const idToName: Record<string, string> = {};
 group.members.forEach((m) => {
     idToName[m.userId] = m.name;
 });
+
+// Calcular gastos por miembro
+const memberSpent: Record<string, number> = {};
+group.members.forEach((m) => {
+    memberSpent[m.userId] = 0;
+});
+group.expenses.forEach((exp) => {
+    if (exp.payerId && memberSpent[exp.payerId] !== undefined) {
+        memberSpent[exp.payerId] += exp.amount;
+    }
+});
 ---
 
 <Layout title={`Group: ${group.name}`}>
@@ -210,11 +221,13 @@ group.members.forEach((m) => {
                         <button type="submit" class="mini-glow-btn">+</button>
                     </form>
                 </div>
+                <button id="settle-btn" class="mini-glow-btn" style="margin-left:1rem;">Saldar cuentas</button>
             </div>
             <div class="balances-grid">
                 {
                     group.members.map((m) => {
                         const bal = memberBalances[m.userId] || 0;
+                        const spent = memberSpent[m.userId] || 0;
                         return (
                             <div class="bal-item">
                                 <div class="bal-user">
@@ -223,19 +236,49 @@ group.members.forEach((m) => {
                                     </div>
                                     <span>{m.name}</span>
                                 </div>
-                                <span
-                                    class={`bal-val ${bal >= 0 ? "positive" : "negative"}`}
-                                >
+                                <span class={`bal-val ${bal >= 0 ? "positive" : "negative"}`}>
                                     {bal >= 0
                                         ? `+ $${bal.toFixed(2)}`
                                         : `- $${Math.abs(bal).toFixed(2)}`}
+                                </span>
+                                <span class="bal-val" style="color:#bfa14a;margin-left:1rem;">
+                                    Gastó: ${spent.toFixed(2)}
                                 </span>
                             </div>
                         );
                     })
                 }
             </div>
+            <div id="settle-result" style="margin-top:1.5rem;"></div>
         </section>
+
+        <script>
+        // Mostrar liquidaciones al pulsar el botón
+        if (typeof window !== "undefined") {
+            document.addEventListener("DOMContentLoaded", () => {
+                const btn = document.getElementById("settle-btn");
+                const result = document.getElementById("settle-result");
+                if (btn && result) {
+                    btn.onclick = () => {
+                        // Mostrar las liquidaciones
+                        const txs = {JSON.stringify(transactions)};
+                        const idToName = {JSON.stringify(idToName)};
+                        let html = "<h3>Liquidaciones:</h3>";
+                        if (txs.length === 0) {
+                            html += "<p>Todo está saldado.</p>";
+                        } else {
+                            html += "<ul style='margin-left:1rem;'>";
+                            txs.forEach(t => {
+                                html += `<li><b>${idToName[t.from] || t.from}</b> paga <b>$${t.amount.toFixed(2)}</b> a <b>${idToName[t.to] || t.to}</b></li>`;
+                            });
+                            html += "</ul>";
+                        }
+                        result.innerHTML = html;
+                    };
+                }
+            });
+        }
+        </script>
     </div>
 </Layout>
 
