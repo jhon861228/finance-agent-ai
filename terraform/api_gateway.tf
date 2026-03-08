@@ -17,11 +17,6 @@ resource "aws_apigatewayv2_stage" "default" {
   }
 }
 
-resource "aws_apigatewayv2_api_key" "frontend_key" {
-  name   = "${var.project_name}-frontend-key"
-  api_id = aws_apigatewayv2_api.telegram_api.id
-  value  = var.frontend_api_key
-}
 
 resource "aws_apigatewayv2_integration" "telegram_integration" {
   api_id           = aws_apigatewayv2_api.telegram_api.id
@@ -41,14 +36,9 @@ resource "aws_apigatewayv2_route" "telegram_route" {
   target    = "integrations/${aws_apigatewayv2_integration.telegram_integration.id}"
 }
 
-resource "aws_apigatewayv2_route_settings" "telegram_route_settings" {
-  api_id    = aws_apigatewayv2_api.telegram_api.id
-  route_key = aws_apigatewayv2_route.telegram_route.route_key
-  
-  route_settings = {
-    ApiKeyRequired = true
-  }
-}
+// Note: API Gateway v2 resources for `api_key` and `route_settings` were removed
+// because the current AWS provider in this repo does not support them.
+// API key validation is implemented in the Express middleware in the Lambda.
 
 # Catch-all route for the Express app
 resource "aws_apigatewayv2_route" "proxy" {

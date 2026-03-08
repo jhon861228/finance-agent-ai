@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { backendRequest } from "../lib/serverApi";
 
 console.log("Ingresando al index");
 console.log("Astro.request.method", Astro.request.method);
@@ -25,13 +26,9 @@ if (Astro.request.method === "POST") {
 				action === "register"
 					? "/api/auth/register"
 					: "/api/auth/login";
-			const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+			const response = await backendRequest(endpoint, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"X-API-Key": API_KEY,
-				},
-				body: JSON.stringify({ username, password }),
+				body: { username, password },
 			});
 
 			const contentType = response.headers.get("content-type");

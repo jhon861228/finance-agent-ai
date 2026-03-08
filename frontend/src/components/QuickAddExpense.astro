@@ -7,7 +7,7 @@ interface Props {
 const { userId, token } = Astro.props;
 ---
 
-<div id="quick-add-overlay" class="modal-overlay">
+<div id="quick-add-overlay" class="modal-overlay" data-user-id={userId} data-token={token}>
     <div id="quick-add-sheet" class="modal-panel">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
@@ -290,82 +290,62 @@ const { userId, token } = Astro.props;
     }
 </style>
 
-<script is:inline define:vars={{ userId, token }}>
-document.addEventListener("DOMContentLoaded", () => {
-    const overlay = document.getElementById("quick-add-overlay");
-    const form = document.getElementById("quick-add-form");
-    const closeBtn = document.getElementById("close-quick-add");
-    let trigger = document.getElementById("nav-add-trigger");
+<script type="module">
+import { addPersonalExpense } from '../lib/apiClient.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('quick-add-overlay');
+    const form = document.getElementById('quick-add-form');
+    const closeBtn = document.getElementById('close-quick-add');
+    let trigger = document.getElementById('nav-add-trigger');
+
+    const userId = overlay?.dataset?.userId;
+    const token = overlay?.dataset?.token;
 
     function openModal() {
         if (!overlay) return;
-        overlay.classList.add("active");
-        document.body.style.overflow = "hidden";
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
         if (!overlay) return;
-        overlay.classList.remove("active");
-        document.body.style.overflow = "";
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
     }
 
-    // Fallback: buscar el trigger por clase si no existe por id
     if (!trigger) {
-        trigger = document.querySelector(".nav-add-trigger");
+        trigger = document.querySelector('.nav-add-trigger');
     }
 
-    if (trigger) trigger.addEventListener("click", openModal);
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
-    if (overlay) overlay.addEventListener("click", (e) => {
+    if (trigger) trigger.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (overlay) overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeModal();
     });
 
-    // Close on Escape key
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeModal();
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
     });
 
     if (form) {
-        form.addEventListener("submit", async (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById("qa-submit");
+            const btn = document.getElementById('qa-submit');
             btn.disabled = true;
-            btn.innerText = "GUARDANDO...";
+            btn.innerText = 'GUARDANDO...';
 
             const formData = new FormData(form);
             const data = {
-                amount: parseFloat(formData.get("amount")),
-                description: formData.get("description"),
-                category: formData.get("category"),
+                amount: parseFloat(formData.get('amount')),
+                description: formData.get('description'),
+                category: formData.get('category'),
                 userId: userId,
                 timestamp: Date.now(),
             };
 
             try {
-                const headers = {
-                    "Content-Type": "application/json",
-                    "X-API-Key": "development-key",
-                };
-
-                // Attach Authorization header when token is provided
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                // If the app set a client-side cookie with the user's email (optional), forward it
-                const cookies = document.cookie.split(';').map(c => c.trim());
-                const emailCookie = cookies.find(c => c.startsWith('userEmail=') || c.startsWith('email='));
-                if (emailCookie) {
-                    const emailValue = emailCookie.split('=')[1];
-                    if (emailValue) headers['X-User-Email'] = decodeURIComponent(emailValue);
-                }
-
-                const response = await fetch(
-                    `${window.location.origin}/api/personal/expenses/${userId}`,
-                    {
-                        method: "POST",
-                        headers,
-                        body: JSON.stringify(data),
-                    },
-                );
+                const response = await addPersonalExpense(userId, data, token);
 
                 if (response.ok) {
                     window.location.reload();
@@ -374,17 +354,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     const message = body?.error || 'Acceso restringido: tu correo no está autorizado para usar este sitio.';
                     alert(message);
                     btn.disabled = false;
-                    btn.innerText = "GUARDAR GASTO";
+                    btn.innerText = 'GUARDAR GASTO';
                 } else {
-                    alert("Error al guardar el gasto");
+                    alert('Error al guardar el gasto');
                     btn.disabled = false;
-                    btn.innerText = "GUARDAR GASTO";
+                    btn.innerText = 'GUARDAR GASTO';
                 }
             } catch (err) {
                 console.error(err);
-                alert("Error de conexión");
+                alert('Error de conexión');
                 btn.disabled = false;
-                btn.innerText = "GUARDAR GASTO";
+                btn.innerText = 'GUARDAR GASTO';
             }
         });
     }
