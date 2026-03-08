@@ -342,20 +342,39 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             try {
+                const headers = {
+                    "Content-Type": "application/json",
+                    "X-API-Key": "development-key",
+                };
+
+                // Attach Authorization header when token is provided
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // If the app set a client-side cookie with the user's email (optional), forward it
+                const cookies = document.cookie.split(';').map(c => c.trim());
+                const emailCookie = cookies.find(c => c.startsWith('userEmail=') || c.startsWith('email='));
+                if (emailCookie) {
+                    const emailValue = emailCookie.split('=')[1];
+                    if (emailValue) headers['X-User-Email'] = decodeURIComponent(emailValue);
+                }
+
                 const response = await fetch(
                     `${window.location.origin}/api/personal/expenses/${userId}`,
                     {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-API-Key": "development-key",
-                        },
+                        headers,
                         body: JSON.stringify(data),
                     },
                 );
 
                 if (response.ok) {
                     window.location.reload();
+                } else if (response.status === 403) {
+                    const body = await response.json().catch(() => ({}));
+                    const message = body?.error || 'Acceso restringido: tu correo no está autorizado para usar este sitio.';
+                    alert(message);
+                    btn.disabled = false;
+                    btn.innerText = "GUARDAR GASTO";
                 } else {
                     alert("Error al guardar el gasto");
                     btn.disabled = false;

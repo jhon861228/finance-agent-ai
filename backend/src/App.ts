@@ -13,6 +13,11 @@ import { v4 as uuidv4 } from 'uuid';
 const app = express();
 const API_KEY = process.env.API_KEY || 'default-secret-key';
 
+// Allowed emails configured via Vercel feature flag or env var.
+// Example (Vercel feature flag): VERCEL_ALLOWED_EMAILS="alice@example.com,bob@example.com"
+const RAW_ALLOWED = process.env.VERCEL_ALLOWED_EMAILS || process.env.ALLOWED_EMAILS || '';
+const ALLOWED_EMAILS = RAW_ALLOWED.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+
 console.log('Environment Debug:');
 console.log('DYNAMODB_ENDPOINT:', process.env.DYNAMODB_ENDPOINT);
 console.log('AWS_REGION:', process.env.AWS_REGION);
@@ -29,10 +34,52 @@ const apiKeyAuth = (req: Request, res: Response, next: any) => {
     next();
 };
 
-// Apply security to all /api routes except telegram (to allow bot webhooks without complicating bot settings for now)
+// Email restriction middleware: if ALLOWED_EMAILS is empty, no restriction is applied.
+const emailRestriction = async (req: Request, res: Response, next: any) => {
+    if (!ALLOWED_EMAILS || ALLOWED_EMAILS.length === 0) return next();
+
+    // Skip the telegram webhook always
+    if (req.path === '/telegram') return next();
+
+    // Allow preflight
+    if (req.method === 'OPTIONS') return next();
+
+    // Try header first
+    const headerEmail = (req.header('X-User-Email') || '').toString().toLowerCase();
+    if (headerEmail) {
+        if (ALLOWED_EMAILS.includes(headerEmail)) return next();
+        return res.status(403).json({ error: 'Access forbidden: email not allowed' });
+    }
+
+    // Try Authorization Bearer token and decode email claim if present
+    const auth = req.header('Authorization');
+    if (auth && auth.startsWith('Bearer ')) {
+        try {
+            const jwt = await import('jsonwebtoken');
+            const token = auth.split(' ')[1];
+            const JWT_SECRET = process.env.JWT_SECRET || 'default-jwt-secret-key-for-dev';
+            const decoded = jwt.verify(token, JWT_SECRET) as any;
+            const email = (decoded?.email || decoded?.userEmail || decoded?.username || '').toString().toLowerCase();
+            if (email && ALLOWED_EMAILS.includes(email)) return next();
+            // If decoded contains username but username is not an email, fallthrough to forbid
+            return res.status(403).json({ error: 'Access forbidden: email not allowed' });
+        } catch (e) {
+            return res.status(403).json({ error: 'Access forbidden: invalid token' });
+        }
+    }
+
+    // No email info provided
+    return res.status(403).json({ error: 'Access forbidden: no user email provided' });
+};
+
 app.use('/api', (req, res, next) => {
     if (req.path === '/telegram') return next();
-    return apiKeyAuth(req, res, next);
+    // First require API key (existing behavior)
+    apiKeyAuth(req, res, (err?: any) => {
+        if (err) return next(err);
+        // Then apply email restriction (if configured)
+        return emailRestriction(req, res, next);
+    });
 });
 
 // Routes using the same logic as Lambda
@@ -171,8 +218,15 @@ app.get('/api/users', async (req: Request, res: Response) => {
 
 app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
-        const { username, password, commandId } = req.body;
+        const { username, password, email, commandId } = req.body;
         if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+
+        // If ALLOWED_EMAILS is configured, require email and check it
+        if (ALLOWED_EMAILS.length > 0) {
+            if (!email) return res.status(403).json({ error: 'Registration requires an allowed email address' });
+            const low = (email || '').toString().toLowerCase();
+            if (!ALLOWED_EMAILS.includes(low)) return res.status(403).json({ error: 'Registration forbidden: email not allowed' });
+        }
 
         const existing = await QueryService.getUserByUsername(username);
         if (existing) return res.status(400).json({ error: 'Username already taken' });
@@ -180,7 +234,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         const command = {
             commandId: commandId || uuidv4(),
             type: 'CreateUser',
-            payload: { name: username, password }
+            payload: { name: username, password, email }
         } as Command;
         const result = await CommandProcessor.process(command);
         res.json(result);
@@ -191,7 +245,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
 app.post('/api/auth/login', async (req: Request, res: Response) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, email: providedEmail } = req.body;
         if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
         const user = await QueryService.getUserByUsername(username);
@@ -207,7 +261,11 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
         const jwt = await import('jsonwebtoken');
         const JWT_SECRET = process.env.JWT_SECRET || 'default-jwt-secret-key-for-dev';
-        const token = jwt.sign({ userId: user.userId, username: user.name }, JWT_SECRET, { expiresIn: '7d' });
+        // Prefer explicit provided email (if any), otherwise try to include user's email if present in record
+        const emailToInclude = providedEmail || (user as any).email || undefined;
+        const tokenPayload: any = { userId: user.userId, username: user.name };
+        if (emailToInclude) tokenPayload.email = emailToInclude;
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({ token, user: { userId: user.userId, name: user.name } });
     } catch (error: any) {
